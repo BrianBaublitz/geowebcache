@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.geowebcache</groupId>
     <artifactId>geowebcache</artifactId>
-    <version>1.22-SNAPSHOT</version>
+    <version>1.26-SNAPSHOT</version>
     <!-- GWC VERSION -->
   </parent>
   <groupId>org.geowebcache</groupId>
@@ -23,7 +23,7 @@
     <dependency>
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-java-sdk-s3</artifactId>
-      <version>1.11.371</version>
+      <version>1.12.261</version>
     </dependency>
 
     <dependency>

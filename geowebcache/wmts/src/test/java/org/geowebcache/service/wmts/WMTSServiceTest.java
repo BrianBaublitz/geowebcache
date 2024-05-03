@@ -85,6 +85,7 @@ import org.geowebcache.service.OWSException;
 import org.geowebcache.stats.RuntimeStats;
 import org.geowebcache.storage.StorageBroker;
 import org.geowebcache.util.NullURLMangler;
+import org.geowebcache.util.URLs;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -131,7 +132,7 @@ public class WMTSServiceTest {
         when(appContext.getBean(BaseConfiguration.class)).thenReturn(config2);
         when(appContext.getBeansOfType(BaseConfiguration.class))
                 .thenReturn(Collections.singletonMap("xmlConfig", config2));
-        TileLayerDispatcher tldx = new TileLayerDispatcher(gridsetBroker);
+        TileLayerDispatcher tldx = new TileLayerDispatcher(gridsetBroker, null);
         tldx.setApplicationContext(appContext);
         tldx.afterPropertiesSet();
         return tldx;
@@ -321,6 +322,7 @@ public class WMTSServiceTest {
                     mockTileLayer("mockLayerUnadv", gridSetNames, Collections.emptyList(), false);
 
             when(tld.getLayerList()).thenReturn(Arrays.asList(tileLayer, tileLayerUn));
+            when(tld.getLayerListFiltered()).thenReturn(Arrays.asList(tileLayer, tileLayerUn));
 
             // add styles
             StringParameterFilter styles = new StringParameterFilter();
@@ -357,7 +359,7 @@ public class WMTSServiceTest {
             // add some layer metadata
             MetadataURL metadataURL =
                     new MetadataURL(
-                            "some-type", "some-format", new URL("http://localhost:8080/some-url"));
+                            "some-type", "some-format", URLs.of("http://localhost:8080/some-url"));
             when(tileLayer.getMetadataURLs()).thenReturn(Collections.singletonList(metadataURL));
         }
 
@@ -606,6 +608,8 @@ public class WMTSServiceTest {
                 Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale", "EPSG:4326");
         TileLayer tileLayer = mockTileLayer("mockLayer", gridSetNames, Collections.emptyList());
         when(tld.getLayerList()).thenReturn(Collections.singletonList(tileLayer));
+        when(tld.getLayerListFiltered()).thenReturn(Collections.singletonList(tileLayer));
+
         Conveyor conv = service.getConveyor(req, resp);
         assertNotNull(conv);
         assertEquals(Conveyor.RequestHandler.SERVICE, conv.reqHandler);
@@ -706,6 +710,8 @@ public class WMTSServiceTest {
             TileLayer tileLayerUn =
                     mockTileLayer("mockLayerUnadv", gridSetNames, Collections.emptyList(), false);
             when(tld.getLayerList()).thenReturn(Arrays.asList(tileLayer, tileLayerUn));
+            when(tld.getLayerListFiltered()).thenReturn(Arrays.asList(tileLayer, tileLayerUn));
+
             GridSubset wgs84Subset = mock(GridSubset.class);
             when(wgs84Subset.getOriginalExtent()).thenReturn(new BoundingBox(-42d, -24d, 40d, 50d));
             GridSubset googleSubset = mock(GridSubset.class);
@@ -784,6 +790,8 @@ public class WMTSServiceTest {
             TileLayer tileLayerUn =
                     mockTileLayer("mockLayerUnadv", gridSetNames, Collections.emptyList(), false);
             when(tld.getLayerList()).thenReturn(Arrays.asList(tileLayer, tileLayerUn));
+            when(tld.getLayerListFiltered()).thenReturn(Arrays.asList(tileLayer, tileLayerUn));
+
             GridSubset wgs84Subset = mock(GridSubset.class);
             when(wgs84Subset.getOriginalExtent()).thenReturn(new BoundingBox(-42d, -24d, 40d, 50d));
             GridSubset googleSubset = mock(GridSubset.class);
@@ -869,6 +877,7 @@ public class WMTSServiceTest {
                     mockTileLayer(
                             "mockLayer", gridSetNames, Collections.singletonList(styleFilter));
             when(tld.getLayerList()).thenReturn(Arrays.asList(tileLayer));
+            when(tld.getLayerListFiltered()).thenReturn(Arrays.asList(tileLayer));
         }
 
         Conveyor conv = service.getConveyor(req, resp);
@@ -952,6 +961,7 @@ public class WMTSServiceTest {
                     mockTileLayer(
                             "mockLayer", gridSetNames, Collections.singletonList(styleFilter));
             when(tld.getLayerList()).thenReturn(Arrays.asList(tileLayer));
+            when(tld.getLayerListFiltered()).thenReturn(Arrays.asList(tileLayer));
         }
 
         Conveyor conv = service.getConveyor(req, resp);
@@ -1035,6 +1045,7 @@ public class WMTSServiceTest {
                     mockTileLayer(
                             "mockLayer", gridSetNames, Collections.singletonList(styleFilter));
             when(tld.getLayerList()).thenReturn(Arrays.asList(tileLayer));
+            when(tld.getLayerListFiltered()).thenReturn(Arrays.asList(tileLayer));
         }
 
         Conveyor conv = service.getConveyor(req, resp);
@@ -1160,6 +1171,7 @@ public class WMTSServiceTest {
                             gridSetNames,
                             Arrays.asList(styleFilter, elevationDimension, timeDimension));
             when(tld.getLayerList()).thenReturn(Arrays.asList(tileLayer));
+            when(tld.getLayerListFiltered()).thenReturn(Arrays.asList(tileLayer));
         }
 
         Conveyor conv = service.getConveyor(req, resp);
@@ -1267,6 +1279,7 @@ public class WMTSServiceTest {
                             any()))
                     .thenReturn(Collections.unmodifiableMap(map));
             when(tld.getLayerList()).thenReturn(Arrays.asList(tileLayer));
+            when(tld.getLayerListFiltered()).thenReturn(Arrays.asList(tileLayer));
         }
 
         Conveyor conv = service.getConveyor(req, resp);
@@ -1366,6 +1379,7 @@ public class WMTSServiceTest {
         TileLayer tileLayer = mock(TileLayer.class);
         when(tld.getTileLayer(layerName)).thenReturn(tileLayer);
         when(tld.getLayerList()).thenReturn(Collections.singleton(tileLayer));
+        when(tld.getLayerListFiltered()).thenReturn(Collections.singleton(tileLayer));
         when(tileLayer.getGridSubset("testGridset")).thenReturn(subset);
         when(tileLayer.getInfoMimeTypes()).thenReturn(Collections.singletonList(XMLMime.gml));
         // doThrow(new SecurityException()).when(secDisp).checkSecurity(Mockito.any());
@@ -1446,6 +1460,7 @@ public class WMTSServiceTest {
         TileLayer tileLayer = mock(TileLayer.class);
         when(tld.getTileLayer(layerName)).thenReturn(tileLayer);
         when(tld.getLayerList()).thenReturn(Collections.singleton(tileLayer));
+        when(tld.getLayerListFiltered()).thenReturn(Collections.singleton(tileLayer));
         when(tileLayer.getGridSubset("testGridset")).thenReturn(subset);
         when(tileLayer.getInfoMimeTypes()).thenReturn(Collections.singletonList(XMLMime.gml));
         doThrow(new SecurityException()).when(secDisp).checkSecurity(Mockito.any());
@@ -1523,6 +1538,7 @@ public class WMTSServiceTest {
         List<String> gridSetNames = Arrays.asList("EPSG:900913");
         TileLayer tileLayer = mockTileLayerWithJSONSupport("mockLayer", gridSetNames);
         when(tld.getLayerList()).thenReturn(Collections.singletonList(tileLayer));
+        when(tld.getLayerListFiltered()).thenReturn(Collections.singletonList(tileLayer));
 
         Conveyor conv = service.getConveyor(req, resp);
         assertNotNull(conv);

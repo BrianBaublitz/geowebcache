@@ -2,20 +2,25 @@ name: Linux GitHub CI
 
 on: [pull_request]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 env:
   MAVEN_OPTS: -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 -Dmaven.wagon.http.retryHandler.count=3 -Xmx512m -Djava.awt.headless=true -Dorg.slf4j.simpleLogger.showDateTime=true -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss,SSS
 
 jobs:
-  openjdk8:
-    runs-on: [ubuntu-18.04]
+  openjdk11:
+    runs-on: [ubuntu-20.04]
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up JDK 1.8
-      uses: actions/setup-java@v1
+    - uses: actions/checkout@v4
+    - name: Set up JDK 11
+      uses: actions/setup-java@v3
       with:
-        java-version: 1.8
+        java-version: 11
+        distribution: 'temurin'
     - name: Maven repository caching
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: ~/.m2/repository
         key: gwc-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -27,16 +32,39 @@ jobs:
       run: |
         find .m2/repository -name "*SNAPSHOT*" -type d | xargs rm -rf {}
 
-  openjdk11:
+  openjdk17:
     runs-on: [ubuntu-20.04]
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up JDK 11
-      uses: actions/setup-java@v1
+    - uses: actions/checkout@v4
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
       with:
-        java-version: 11
+        java-version: 17
+        distribution: 'temurin'
     - name: Maven repository caching
-      uses: actions/cache@v1
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: gwc-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+    - name: Build with Maven
+      run: mvn -B clean install -Dspotless.apply.skip=true -Dall -T2 --file geowebcache/pom.xml
+    - name: Remove SNAPSHOT jars from repository
+      run: |
+        find .m2/repository -name "*SNAPSHOT*" -type d | xargs rm -rf {}
+
+  openjdk21:
+    runs-on: [ubuntu-20.04]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up JDK 21
+      uses: actions/setup-java@v3
+      with:
+        java-version: 21
+        distribution: 'temurin'
+    - name: Maven repository caching
+      uses: actions/cache@v3
       with:
         path: ~/.m2/repository
         key: gwc-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -51,13 +79,14 @@ jobs:
   QA:
     runs-on: [ubuntu-20.04]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Set up JDK 11
-      uses: actions/setup-java@v1
+      uses: actions/setup-java@v3
       with:
         java-version: 11
+        distribution: 'temurin'
     - name: Maven repository caching
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: ~/.m2/repository
         key: gwc-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}

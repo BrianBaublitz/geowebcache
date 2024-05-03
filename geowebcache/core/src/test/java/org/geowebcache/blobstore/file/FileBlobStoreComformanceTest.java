@@ -21,6 +21,9 @@ import static org.junit.Assert.assertThat;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.geotools.util.logging.Logging;
 import org.geowebcache.storage.AbstractBlobStoreTest;
 import org.geowebcache.storage.StorageException;
 import org.geowebcache.storage.blobstore.file.FileBlobStore;
@@ -31,6 +34,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public class FileBlobStoreComformanceTest extends AbstractBlobStoreTest<FileBlobStore> {
+
+    static final Logger LOGGER = Logging.getLogger(FileBlobStoreComformanceTest.class);
 
     @Rule public TemporaryFolder temp = new TemporaryFolder();
 
@@ -45,6 +50,7 @@ public class FileBlobStoreComformanceTest extends AbstractBlobStoreTest<FileBlob
     private void putLayerMetadataConcurrently(
             final int srcStoreKey, final FileBlobStore srcStore, int numberOfThreads)
             throws InterruptedException {
+        @SuppressWarnings("PMD.CloseResource") // implements AutoCloseable in Java 21
         ExecutorService service = Executors.newFixedThreadPool(numberOfThreads);
         CountDownLatch latch = new CountDownLatch(numberOfThreads);
         for (int i = 0; i < numberOfThreads; i++) {
@@ -58,7 +64,7 @@ public class FileBlobStoreComformanceTest extends AbstractBlobStoreTest<FileBlob
                             // System.err.printf("Setting %s=%s%n", threadKey, value);
                             srcStore.putLayerMetadata("testLayer", threadStoreKey, value);
                         } catch (RuntimeException eh) {
-                            eh.printStackTrace();
+                            LOGGER.log(Level.SEVERE, eh.getMessage(), eh);
                             throw eh;
                         } finally {
                             latch.countDown();
@@ -70,6 +76,7 @@ public class FileBlobStoreComformanceTest extends AbstractBlobStoreTest<FileBlob
 
     private void executeStoresConcurrently(int numberOfStores, int numberOfThreads)
             throws InterruptedException {
+        @SuppressWarnings("PMD.CloseResource") // implements AutoCloseable in Java 21
         ExecutorService service = Executors.newFixedThreadPool(numberOfStores);
         CountDownLatch latch = new CountDownLatch(numberOfStores);
         for (int i = 0; i < numberOfStores; i++) {
@@ -81,7 +88,7 @@ public class FileBlobStoreComformanceTest extends AbstractBlobStoreTest<FileBlob
                                     new FileBlobStore(temp.getRoot().getAbsolutePath());
                             putLayerMetadataConcurrently(key, nStore, numberOfThreads);
                         } catch (InterruptedException | StorageException eh) {
-                            eh.printStackTrace();
+                            LOGGER.log(Level.SEVERE, eh.getMessage(), eh);
                         } finally {
                             latch.countDown();
                         }
@@ -101,6 +108,7 @@ public class FileBlobStoreComformanceTest extends AbstractBlobStoreTest<FileBlob
     public void testConcurrentMetadataWithPointInKey() throws InterruptedException {
         assertThat(store.getLayerMetadata("testLayer", "test.Key"), nullValue());
         int numberOfThreads = 2;
+        @SuppressWarnings("PMD.CloseResource") // implements AutoCloseable in Java 21
         ExecutorService service = Executors.newFixedThreadPool(numberOfThreads);
         CountDownLatch latch = new CountDownLatch(numberOfThreads);
         for (int i = 0; i < numberOfThreads; i++) {

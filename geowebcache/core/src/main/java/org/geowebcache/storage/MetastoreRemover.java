@@ -123,6 +123,7 @@ public class MetastoreRemover {
 
                     long count = 0;
 
+                    @Override
                     public void processRow(ResultSet rs) throws SQLException {
                         String layer = rs.getString(1);
                         String gridset = rs.getString(2);
@@ -214,6 +215,7 @@ public class MetastoreRemover {
 
                     int count = 0;
 
+                    @Override
                     public void processRow(ResultSet rs) throws SQLException {
                         // read the result set
                         String layer = rs.getString(1);
@@ -300,7 +302,10 @@ public class MetastoreRemover {
             // grab the connection
             return DriverManager.getConnection(jdbcString, username, password);
         } catch (ClassNotFoundException e) {
-            log.log(Level.WARNING, "Could not find the metastore driver, skipping migration", e);
+            Level logLevel = Level.WARNING;
+            if (getVariable(DefaultStorageFinder.GWC_METASTORE_DRIVER_CLASS, null) == null)
+                logLevel = Level.FINE;
+            log.log(logLevel, "Could not find the metastore driver, skipping migration", e);
             return null;
         } catch (SQLException e) {
             log.log(

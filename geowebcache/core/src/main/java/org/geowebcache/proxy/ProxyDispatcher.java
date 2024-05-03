@@ -22,6 +22,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.geotools.util.logging.Logging;
+import org.geowebcache.util.URLs;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.AbstractController;
 
@@ -30,6 +31,7 @@ public class ProxyDispatcher extends AbstractController {
 
     private static long lastRequest = System.currentTimeMillis();
 
+    @Override
     protected ModelAndView handleRequestInternal(
             HttpServletRequest request, HttpServletResponse response) throws Exception {
 
@@ -43,7 +45,8 @@ public class ProxyDispatcher extends AbstractController {
             throw new ServletException("Expected url parameter.");
         }
 
-        synchronized (this) {
+        // lastRequest is static, static synchronization needed
+        synchronized (ProxyDispatcher.class) {
             long time = System.currentTimeMillis();
             if (time - lastRequest < 1000) {
                 throw new ServletException("Only one request per second please.");
@@ -60,7 +63,7 @@ public class ProxyDispatcher extends AbstractController {
         }
         String decodedUrl = URLDecoder.decode(urlStr, charEnc);
 
-        URL url = new URL(decodedUrl);
+        URL url = URLs.of(decodedUrl);
         HttpURLConnection wmsBackendCon = (HttpURLConnection) url.openConnection();
 
         if (wmsBackendCon.getContentEncoding() != null) {

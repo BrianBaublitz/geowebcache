@@ -215,6 +215,7 @@ public class TileRangeIteratorTest {
             final int[] metaTilingFactors)
             throws Exception {
 
+        @SuppressWarnings("PMD.CloseResource") // implements AutoCloseable in Java 21
         final ExecutorService executorService = Executors.newFixedThreadPool(nThreads);
 
         final TileRange tileRange;
@@ -280,6 +281,7 @@ public class TileRangeIteratorTest {
             this.tri = tri;
         }
 
+        @Override
         public Long call() throws Exception {
             long nprocessed = 0;
             long[] gridLoc = new long[3];

@@ -88,6 +88,7 @@ import org.geowebcache.storage.DefaultStorageFinder;
 import org.geowebcache.storage.UnsuitableStorageException;
 import org.geowebcache.util.ApplicationContextProvider;
 import org.geowebcache.util.ExceptionUtils;
+import org.geowebcache.util.URLs;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -205,6 +206,7 @@ public class XMLConfiguration
     }
 
     /** @see ServerConfiguration#isRuntimeStatsEnabled() */
+    @Override
     public Boolean isRuntimeStatsEnabled() {
         if (getGwcConfig() == null || getGwcConfig().getRuntimeStats() == null) {
             return true;
@@ -214,17 +216,20 @@ public class XMLConfiguration
     }
 
     /** @see ServerConfiguration#setRuntimeStatsEnabled(Boolean) */
+    @Override
     public void setRuntimeStatsEnabled(Boolean isEnabled) throws IOException {
         getGwcConfig().setRuntimeStats(isEnabled);
         save();
     }
 
     /** @see ServerConfiguration#getServiceInformation() */
+    @Override
     public synchronized ServiceInformation getServiceInformation() {
         return getGwcConfig().getServiceInformation();
     }
 
     /** @see ServerConfiguration#setServiceInformation(ServiceInformation); */
+    @Override
     public void setServiceInformation(ServiceInformation serviceInfo) throws IOException {
         getGwcConfig().setServiceInformation(serviceInfo);
         save();
@@ -262,10 +267,10 @@ public class XMLConfiguration
             URL proxyUrl = null;
             try {
                 if (getGwcConfig().getProxyUrl() != null) {
-                    proxyUrl = new URL(getGwcConfig().getProxyUrl());
+                    proxyUrl = URLs.of(getGwcConfig().getProxyUrl());
                     log.fine("Using proxy " + proxyUrl.getHost() + ":" + proxyUrl.getPort());
                 } else if (wl.getProxyUrl() != null) {
-                    proxyUrl = new URL(wl.getProxyUrl());
+                    proxyUrl = URLs.of(wl.getProxyUrl());
                     log.fine("Using proxy " + proxyUrl.getHost() + ":" + proxyUrl.getPort());
                 }
             } catch (MalformedURLException e) {
@@ -505,6 +510,7 @@ public class XMLConfiguration
      * @return {@code true} only if {@code tl instanceof WMSLayer}
      * @see TileLayerConfiguration#canSave(org.geowebcache.layer.TileLayer)
      */
+    @Override
     public boolean canSave(TileLayer tl) {
         if (tl.isTransientLayer()) {
             return false;
@@ -526,6 +532,7 @@ public class XMLConfiguration
      * @throws IllegalArgumentException if a layer named the same than {@code tl} already exists
      * @see TileLayerConfiguration#addLayer(org.geowebcache.layer.TileLayer)
      */
+    @Override
     public synchronized void addLayer(TileLayer tl) throws IllegalArgumentException {
         if (tl == null) {
             throw new NullPointerException();
@@ -558,6 +565,7 @@ public class XMLConfiguration
      * @param tl the new layer to overwrite the existing layer
      * @see TileLayerConfiguration#modifyLayer(org.geowebcache.layer.TileLayer)
      */
+    @Override
     public synchronized void modifyLayer(TileLayer tl) throws NoSuchElementException {
         TileLayer previous = findLayer(tl.getName());
         if (!canSaveIfNotTransient(tl)) {
@@ -592,6 +600,7 @@ public class XMLConfiguration
     }
 
     /** @see TileLayerConfiguration#renameLayer(String, String) */
+    @Override
     public void renameLayer(String oldName, String newName)
             throws NoSuchElementException, IllegalArgumentException {
         throw new UnsupportedOperationException(
@@ -599,6 +608,7 @@ public class XMLConfiguration
     }
 
     /** @see TileLayerConfiguration#removeLayer(java.lang.String) */
+    @Override
     public synchronized void removeLayer(final String layerName)
             throws NoSuchElementException, IllegalArgumentException {
         final TileLayer tileLayer = findLayer(layerName);
@@ -821,6 +831,7 @@ public class XMLConfiguration
         }
     }
 
+    @Override
     public void afterPropertiesSet() throws GeoWebCacheException {
 
         if (gridSetBroker == null) {
@@ -891,6 +902,7 @@ public class XMLConfiguration
     }
 
     /** @see TileLayerConfiguration#getIdentifier() */
+    @Override
     public String getIdentifier() {
         return resourceProvider.getId();
     }
@@ -910,11 +922,13 @@ public class XMLConfiguration
     }
 
     /** @see TileLayerConfiguration#getLayers() */
+    @Override
     public Collection<TileLayer> getLayers() {
         return Collections.unmodifiableList(getGwcConfig().getLayers());
     }
 
     /** @see TileLayerConfiguration#getLayer(java.lang.String) */
+    @Override
     public Optional<TileLayer> getLayer(String layerName) {
         return Optional.ofNullable(layers.get(layerName));
     }
@@ -933,20 +947,24 @@ public class XMLConfiguration
     }
 
     /** @see TileLayerConfiguration#containsLayer(java.lang.String) */
+    @Override
     public boolean containsLayer(String layerId) {
         return layers.containsKey(layerId);
     }
 
     /** @see TileLayerConfiguration#getLayerCount() */
+    @Override
     public int getLayerCount() {
         return layers.size();
     }
 
     /** @see TileLayerConfiguration#getLayerNames() */
+    @Override
     public Set<String> getLayerNames() {
         return Collections.unmodifiableSet(this.layers.keySet());
     }
 
+    @Override
     public String getVersion() {
         return getGwcConfig().getVersion();
     }
@@ -1306,6 +1324,7 @@ public class XMLConfiguration
      * @param wmtsCiteStrictCompliant TRUE or FALSE, activating or deactivation CITE strict
      *     compliance mode for WMTS
      */
+    @Override
     public void setWmtsCiteCompliant(Boolean wmtsCiteStrictCompliant) throws IOException {
         if (gwcConfig != null) {
             // activate or deactivate CITE strict compliance mode for WMTS implementation

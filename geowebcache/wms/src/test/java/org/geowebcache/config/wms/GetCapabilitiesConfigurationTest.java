@@ -18,6 +18,7 @@ import static org.easymock.EasyMock.capture;
 import static org.easymock.EasyMock.createNiceMock;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.expectLastCall;
+import static org.easymock.EasyMock.newCapture;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
 import static org.hamcrest.Matchers.is;
@@ -28,7 +29,6 @@ import static org.hamcrest.text.IsEqualIgnoringCase.equalToIgnoringCase;
 import static org.junit.Assert.assertThat;
 
 import com.google.common.collect.Sets;
-import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -48,6 +48,7 @@ import org.geowebcache.filter.parameters.ParameterFilter;
 import org.geowebcache.grid.GridSetBroker;
 import org.geowebcache.layer.TileLayer;
 import org.geowebcache.layer.wms.WMSLayer;
+import org.geowebcache.util.URLs;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
@@ -69,7 +70,7 @@ public class GetCapabilitiesConfigurationTest {
         req = createNiceMock(WMSRequest.class);
         gcOpType = createNiceMock(OperationType.class);
         globalConfig = createNiceMock(DefaultingConfiguration.class);
-        layerCapture = new Capture<>(CaptureType.LAST);
+        layerCapture = newCapture(CaptureType.LAST);
         broker = new GridSetBroker(Collections.singletonList(new DefaultGridsets(false, false)));
 
         expect(server.getCapabilities()).andStubReturn(cap);
@@ -77,7 +78,7 @@ public class GetCapabilitiesConfigurationTest {
         expect(req.getGetCapabilities()).andStubReturn(gcOpType);
         expect(gcOpType.getGet())
                 .andStubReturn(
-                        new URL(
+                        URLs.of(
                                 "http://test/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=getcapabilities"));
         expect(cap.getVersion()).andStubReturn("1.1.1");
     }
@@ -214,7 +215,7 @@ public class GetCapabilitiesConfigurationTest {
         expect(req.getGetCapabilities()).andStubReturn(gcOpType);
         expect(gcOpType.getGet())
                 .andStubReturn(
-                        new URL(
+                        URLs.of(
                                 "http://test/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=getcapabilities"));
 
         expect(cap.getVersion()).andStubReturn("1.1.1");

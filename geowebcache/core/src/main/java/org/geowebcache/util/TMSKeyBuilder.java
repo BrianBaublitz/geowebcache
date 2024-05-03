@@ -39,6 +39,7 @@ public final class TMSKeyBuilder {
     public static final String LAYER_METADATA_OBJECT_NAME = "metadata.properties";
     public static final String PARAMETERS_METADATA_OBJECT_PREFIX = "parameters-";
     public static final String PARAMETERS_METADATA_OBJECT_SUFFIX = ".properties";
+    public static final String PENDING_DELETES = "_pending_deletes.properties";
 
     private String prefix;
 
@@ -194,7 +195,7 @@ public final class TMSKeyBuilder {
      * @return the key prefix up to the coordinates (i.e. {@code
      *     "<prefix>/<layer>/<gridset>/<format>/<parametersId>"})
      */
-    public String coordinatesPrefix(TileRange obj, boolean endWithSlah) {
+    public String coordinatesPrefix(TileRange obj, boolean endWithSlash) {
         checkNotNull(obj.getLayerName());
         checkNotNull(obj.getGridSetId());
         checkNotNull(obj.getMimeType());
@@ -215,12 +216,13 @@ public final class TMSKeyBuilder {
         }
         String shortFormat = mimeType.getFileExtension(); // png, png8, png24, etc
 
-        String key = join(endWithSlah, prefix, layer, gridset, shortFormat, parametersId);
+        String key = join(endWithSlash, prefix, layer, gridset, shortFormat, parametersId);
         return key;
     }
 
     public String pendingDeletes() {
-        return String.format("%s/%s", prefix, "_pending_deletes.properties");
+        if (!Strings.isNullOrEmpty(prefix)) return String.format("%s/%s", prefix, PENDING_DELETES);
+        else return PENDING_DELETES;
     }
 
     private static String join(boolean closing, Object... elements) {

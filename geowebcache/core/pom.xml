@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.geowebcache</groupId>
     <artifactId>geowebcache</artifactId>
-    <version>1.22-SNAPSHOT</version>
+    <version>1.26-SNAPSHOT</version>
     <!-- GWC VERSION -->
   </parent>
   <groupId>org.geowebcache</groupId>
@@ -39,6 +39,7 @@
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
+      <optional>true</optional>
     </dependency>
 
     <!-- logging -->
@@ -219,7 +220,7 @@
     <dependency>
       <groupId>org.owasp.encoder</groupId>
       <artifactId>encoder</artifactId>
-      <version>1.1</version>
+      <version>1.2.3</version>
     </dependency>
 
   </dependencies>

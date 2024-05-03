@@ -45,6 +45,22 @@ public class MimeType {
         this.supportsTiling = supportsTiling;
     }
 
+    /**
+     * Checks if mime type is a binary type
+     *
+     * @param value mime type
+     * @return true if mime type is binary
+     * @throws MimeException if mime type is not supported
+     */
+    public static boolean isBinary(String value) throws MimeException {
+        MimeType mt = MimeType.createFromFormat(value);
+        return mt.isBinary();
+    }
+
+    protected boolean isBinary() {
+        return false;
+    }
+
     /** The MIME identifier string for this format. */
     public String getMimeType() {
         return mimeType;
@@ -153,6 +169,7 @@ public class MimeType {
         return null;
     }
 
+    @Override
     public boolean equals(Object obj) {
         if (obj != null && obj.getClass() == this.getClass()) {
             MimeType mimeObj = (MimeType) obj;
@@ -163,6 +180,7 @@ public class MimeType {
         return false;
     }
 
+    @Override
     public int hashCode() {
         return format.hashCode();
     }

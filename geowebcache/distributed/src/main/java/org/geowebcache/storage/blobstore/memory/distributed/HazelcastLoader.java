@@ -16,7 +16,7 @@ package org.geowebcache.storage.blobstore.memory.distributed;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MaxSizeConfig;
+import com.hazelcast.config.MaxSizePolicy;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.Hazelcast;
@@ -29,6 +29,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.io.filefilter.NameFileFilter;
 import org.geotools.util.logging.Logging;
+import org.geotools.xml.XMLUtils;
 import org.springframework.beans.factory.InitializingBean;
 
 /**
@@ -53,6 +54,18 @@ public class HazelcastLoader implements InitializingBean {
 
     /** Hazelcast instance to pass to the {@link HazelcastCacheProvider} class */
     private HazelcastInstance instance;
+
+    // Disable Hazelcast's XXE protection if the XML libraries don't support JAXP 1.5
+    static {
+        if (System.getProperty("hazelcast.ignoreXxeProtectionFailures") == null) {
+            try {
+                XMLUtils.checkSupportForJAXP15Properties();
+            } catch (IllegalStateException e) {
+                LOGGER.warning("Disabling Hazelcast XXE protection because " + e.getMessage());
+                System.setProperty("hazelcast.ignoreXxeProtectionFailures", "true");
+            }
+        }
+    }
 
     @Override
     public void afterPropertiesSet() throws Exception {
@@ -134,12 +147,13 @@ public class HazelcastLoader implements InitializingBean {
                 MapConfig mapConfig =
                         config.getMapConfig(HazelcastCacheProvider.HAZELCAST_MAP_DEFINITION);
                 // Check size policy
-                boolean sizeDefined = mapConfig.getMaxSizeConfig().getSize() > 0;
+                boolean sizeDefined = mapConfig.getEvictionConfig().getSize() > 0;
                 boolean policyExists =
-                        mapConfig.getEvictionPolicy() != MapConfig.DEFAULT_EVICTION_POLICY;
+                        mapConfig.getEvictionConfig().getEvictionPolicy()
+                                != MapConfig.DEFAULT_EVICTION_POLICY;
                 boolean sizeFromHeap =
-                        mapConfig.getMaxSizeConfig().getMaxSizePolicy()
-                                == MaxSizeConfig.MaxSizePolicy.USED_HEAP_SIZE;
+                        mapConfig.getEvictionConfig().getMaxSizePolicy()
+                                == MaxSizePolicy.USED_HEAP_SIZE;
 
                 // Check Near Cache size
                 boolean nearCacheAccepted = true;

@@ -15,9 +15,9 @@
  */
 package org.geowebcache.rest.controller;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.List;
@@ -77,17 +77,23 @@ public class ByteStreamController {
 
     static final Pattern UNSAFE_RESOURCE = Pattern.compile("^/|/\\.\\./|^\\.\\./|\\.class$");
 
-    @RequestMapping(value = "/web/**", method = RequestMethod.GET)
-    ResponseEntity<?> doGet(HttpServletRequest request, HttpServletResponse response) {
+    // "gwc/rest/web/openlayers3/ol.js" -> openlayers3/ol.js
+    // "/rest/web/openlayers3/ol.js" -> openlayers3/ol.js
+    String getFileName(HttpServletRequest request) throws IOException {
+        String path =
+                URLDecoder.decode(request.getRequestURI(), "UTF-8")
+                        .substring(request.getContextPath().length())
+                        .replace(File.separatorChar, '/');
+        int index = path.indexOf("/rest/web/");
+        return index < 0 ? null : path.substring(index + "/rest/web/".length());
+    }
 
-        final String filename;
-        try {
-            filename =
-                    URLDecoder.decode(
-                            request.getPathInfo().substring("/rest/web/".length()), "UTF-8");
-        } catch (UnsupportedEncodingException e1) {
-            throw new IllegalStateException(
-                    "Cound not decode encoding UTF-8", e1); // Should never happen
+    @RequestMapping(value = "/web/**", method = RequestMethod.GET)
+    ResponseEntity<?> doGet(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        final String filename = getFileName(request);
+        if (filename == null || filename.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
         // Just to make sure we don't allow access to arbitrary resources

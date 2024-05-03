@@ -65,6 +65,7 @@ public class NIOLockProvider implements LockProvider {
         this.maxLockAttempts = 120 * 1000 / waitBeforeRetry;
     }
 
+    @Override
     @SuppressWarnings({"PMD.CloseResource", "PMD.UseTryWithResources"})
     // complex but seemingly correct resource handling
     public LockProvider.Lock getLock(final String lockKey) throws GeoWebCacheException {
@@ -114,7 +115,7 @@ public class NIOLockProvider implements LockProvider {
                             "Lock "
                                     + lockKey
                                     + " acquired by thread "
-                                    + Thread.currentThread().getId()
+                                    + Thread.currentThread().getName()
                                     + " on file "
                                     + file);
                 }
@@ -132,6 +133,7 @@ public class NIOLockProvider implements LockProvider {
 
                     boolean released;
 
+                    @Override
                     public void release() throws GeoWebCacheException {
                         if (released) {
                             return;
@@ -149,7 +151,7 @@ public class NIOLockProvider implements LockProvider {
                                                     + " for releasing lock is unkonwn, it means "
                                                     + "this lock was never acquired, or was released twice. "
                                                     + "Current thread is: "
-                                                    + Thread.currentThread().getId()
+                                                    + Thread.currentThread().getName()
                                                     + ". "
                                                     + "Are you running two GWC instances in the same JVM using NIO locks? "
                                                     + "This case is not supported and will generate exactly this error message");
@@ -168,7 +170,7 @@ public class NIOLockProvider implements LockProvider {
                                                     + " on file "
                                                     + lockFile
                                                     + " released by thread "
-                                                    + Thread.currentThread().getId());
+                                                    + Thread.currentThread().getName());
                                 }
                             } catch (IOException e) {
                                 throw new GeoWebCacheException(

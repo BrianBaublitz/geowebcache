@@ -14,62 +14,114 @@
  */
 package org.geowebcache.locks;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.geotools.util.logging.Logging;
-import org.geowebcache.GeoWebCacheException;
 
 /**
- * An in memory lock provider based on a striped lock
+ * An in memory lock provider.
+ *
+ * <p>This provider does not constrain the number of locks that can be held at any given time.
+ * Because any one thread can hold multiple locks at a time, a more appropriate approach to
+ * constraining resource usage would be to limit the number of concurrent threads instead.
+ *
+ * <p>One objective of this class is to <a
+ * href="https://github.com/GeoWebCache/geowebcache/issues/1226">support nested locking
+ * scenarios</a>. This class used to use a striped lock algorithm which would cause deadlocks for
+ * nested locking because of the non-predictable manner in which any lock can be arbitrarily locked
+ * by another unrelated lock. An example use case of nested locks, in pseudocode, would be:
+ *
+ * <pre>
+ *  lock(metatile);
+ *  try {
+ *      for(tile : metatile.getTiles()){
+ *          lock(tile);
+ *          try{
+ *              ... do work
+ *           } finally {
+ *               release(tile);
+ *          }
+ *      }
+ *  } finally {
+ *      release(metatile);
+ *  }
+ * </pre>
  *
  * @author Andrea Aime - GeoSolutions
  */
 public class MemoryLockProvider implements LockProvider {
 
-    private static Logger LOGGER = Logging.getLogger(MemoryLockProvider.class.getName());
+    private static final Logger LOGGER = Logging.getLogger(MemoryLockProvider.class.getName());
 
-    java.util.concurrent.locks.Lock[] locks;
+    ConcurrentHashMap<String, LockAndCounter> lockAndCounters = new ConcurrentHashMap<>();
 
-    public MemoryLockProvider() {
-        this(1024);
-    }
-
-    public MemoryLockProvider(int concurrency) {
-        locks = new java.util.concurrent.locks.Lock[concurrency];
-        for (int i = 0; i < locks.length; i++) {
-            locks[i] = new ReentrantLock();
-        }
-    }
-
+    @Override
     public Lock getLock(String lockKey) {
-        final int idx = getIndex(lockKey);
-        if (LOGGER.isLoggable(Level.FINE))
-            LOGGER.fine("Mapped lock key " + lockKey + " to index " + idx + ". Acquiring lock.");
-        locks[idx].lock();
-        if (LOGGER.isLoggable(Level.FINE))
-            LOGGER.fine("Mapped lock key " + lockKey + " to index " + idx + ". Lock acquired");
+        if (LOGGER.isLoggable(Level.FINE)) LOGGER.fine("Acquiring lock key " + lockKey);
+
+        // Atomically create a new LockAndCounter, or increment the existing one
+        LockAndCounter lockAndCounter =
+                lockAndCounters.compute(
+                        lockKey,
+                        (key, internalLockAndCounter) -> {
+                            if (internalLockAndCounter == null) {
+                                internalLockAndCounter = new LockAndCounter();
+                            }
+                            internalLockAndCounter.counter.incrementAndGet();
+                            return internalLockAndCounter;
+                        });
+
+        lockAndCounter.lock.lock();
+
+        if (LOGGER.isLoggable(Level.FINE)) LOGGER.fine("Acquired lock key " + lockKey);
 
         return new Lock() {
 
             boolean released = false;
 
-            public void release() throws GeoWebCacheException {
+            @Override
+            public void release() {
                 if (!released) {
                     released = true;
-                    locks[idx].unlock();
-                    if (LOGGER.isLoggable(Level.FINE))
-                        LOGGER.fine("Released lock key " + lockKey + " mapped to index " + idx);
+
+                    LockAndCounter lockAndCounter = lockAndCounters.get(lockKey);
+                    lockAndCounter.lock.unlock();
+
+                    // Attempt to remove lock if no other thread is waiting for it
+                    if (lockAndCounter.counter.decrementAndGet() == 0) {
+
+                        // Try to remove the lock, but we have to check the count AGAIN inside of
+                        // "compute"
+                        // so that we know it hasn't been incremented since the if-statement above
+                        // was evaluated
+                        lockAndCounters.compute(
+                                lockKey,
+                                (key, existingLockAndCounter) -> {
+                                    if (existingLockAndCounter == null
+                                            || existingLockAndCounter.counter.get() == 0) {
+                                        return null;
+                                    }
+                                    return existingLockAndCounter;
+                                });
+                    }
+
+                    if (LOGGER.isLoggable(Level.FINE)) LOGGER.fine("Released lock key " + lockKey);
                 }
             }
         };
     }
 
-    private int getIndex(String lockKey) {
-        // Simply hashing the lock key generated a significant number of collisions,
-        // doing the SHA1 digest of it provides a much better distribution
-        int idx = Math.abs(DigestUtils.sha1Hex(lockKey).hashCode() % locks.length);
-        return idx;
+    /**
+     * A ReentrantLock with a counter to track how many threads are waiting on this lock so we know
+     * if it's safe to remove it during a release.
+     */
+    private static class LockAndCounter {
+        private final java.util.concurrent.locks.Lock lock = new ReentrantLock();
+
+        // The count of threads holding or waiting for this lock
+        private final AtomicInteger counter = new AtomicInteger(0);
     }
 }

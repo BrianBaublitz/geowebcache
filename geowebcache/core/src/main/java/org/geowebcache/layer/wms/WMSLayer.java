@@ -54,6 +54,7 @@ import org.geowebcache.mime.FormatModifier;
 import org.geowebcache.mime.MimeType;
 import org.geowebcache.mime.XMLMime;
 import org.geowebcache.util.GWCVars;
+import org.geowebcache.util.URLs;
 
 /** A tile layer backed by a WMS server */
 public class WMSLayer extends AbstractTileLayer implements ProxyLayer {
@@ -166,6 +167,7 @@ public class WMSLayer extends AbstractTileLayer implements ProxyLayer {
         this.wmsQueryLayers = wmsQueryLayers;
     }
 
+    @Override
     protected Object readResolve() {
         super.readResolve();
         return this;
@@ -249,6 +251,7 @@ public class WMSLayer extends AbstractTileLayer implements ProxyLayer {
      * @param tile The tile request
      * @return The resulting tile request
      */
+    @Override
     public ConveyorTile getTile(ConveyorTile tile)
             throws GeoWebCacheException, IOException, OutsideCoverageException {
         MimeType mime = tile.getMimeType();
@@ -291,6 +294,7 @@ public class WMSLayer extends AbstractTileLayer implements ProxyLayer {
     }
 
     /** Used for seeding */
+    @Override
     public void seedTile(ConveyorTile tile, boolean tryCache)
             throws GeoWebCacheException, IOException {
         GridSubset gridSubset = getGridSubset(tile.getGridSetId());
@@ -482,6 +486,7 @@ public class WMSLayer extends AbstractTileLayer implements ProxyLayer {
         return false;
     }
 
+    @Override
     public ConveyorTile doNonMetatilingRequest(ConveyorTile tile) throws GeoWebCacheException {
         tile.setTileLayer(this);
 
@@ -746,6 +751,7 @@ public class WMSLayer extends AbstractTileLayer implements ProxyLayer {
         return ret;
     }
 
+    @Override
     public ConveyorTile getNoncachedTile(ConveyorTile tile) throws GeoWebCacheException {
 
         // Should we do mime type checks?
@@ -789,6 +795,7 @@ public class WMSLayer extends AbstractTileLayer implements ProxyLayer {
         this.lockProvider = lockProvider;
     }
 
+    @Override
     public void proxyRequest(ConveyorTile tile) throws GeoWebCacheException {
         String queryStr = tile.servletReq.getQueryString();
         String serverStr = getWMSurl()[0];
@@ -797,9 +804,9 @@ public class WMSLayer extends AbstractTileLayer implements ProxyLayer {
         try {
             URL url;
             if (serverStr.contains("?")) {
-                url = new URL(serverStr + "&" + queryStr);
+                url = URLs.of(serverStr + "&" + queryStr);
             } else {
-                url = new URL(serverStr + queryStr);
+                url = URLs.of(serverStr + queryStr);
             }
 
             WMSSourceHelper helper = getSourceHelper();
@@ -814,11 +821,13 @@ public class WMSLayer extends AbstractTileLayer implements ProxyLayer {
             HttpEntity entity = httpResponse.getEntity();
             try (InputStream is = entity.getContent()) {
                 HttpServletResponse response = tile.servletResp;
-                Header contentEncoding = entity.getContentEncoding();
-                response.setCharacterEncoding(contentEncoding.getValue());
                 org.apache.http.Header contentType = httpResponse.getFirstHeader("Content-Type");
                 if (contentType != null) {
                     response.setContentType(contentType.getValue());
+                    Header contentEncoding = entity.getContentEncoding();
+                    if (!MimeType.isBinary(contentType.getValue())) {
+                        response.setCharacterEncoding(contentEncoding.getValue());
+                    }
                 }
 
                 int read = 0;

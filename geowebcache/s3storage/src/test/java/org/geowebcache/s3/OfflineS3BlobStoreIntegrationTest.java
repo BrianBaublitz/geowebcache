@@ -41,6 +41,7 @@ public class OfflineS3BlobStoreIntegrationTest extends AbstractS3BlobStoreIntegr
         api.stop();
     }
 
+    @Override
     protected S3BlobStoreInfo getConfiguration() {
         S3BlobStoreInfo config = new S3BlobStoreInfo();
         config.setAwsAccessKey("");
@@ -51,7 +52,6 @@ public class OfflineS3BlobStoreIntegrationTest extends AbstractS3BlobStoreIntegr
     }
 
     @Override
-    @Ignore // randomly fails
     @Test
     public void testTruncateOptimizationIfNoListeners() throws StorageException, MimeException {
         super.testTruncateOptimizationIfNoListeners();
