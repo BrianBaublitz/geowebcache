@@ -1,6 +1,7 @@
 package org.geowebcache.diskquota;
 
 import static org.easymock.EasyMock.newCapture;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -8,7 +9,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import java.io.File;
 import java.math.BigInteger;
@@ -17,11 +18,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.easymock.Capture;
@@ -31,7 +32,6 @@ import org.geowebcache.config.BaseConfiguration;
 import org.geowebcache.config.DefaultGridsets;
 import org.geowebcache.config.GridSetConfiguration;
 import org.geowebcache.config.MockConfigurationResourceProvider;
-import org.geowebcache.config.TileLayerConfiguration;
 import org.geowebcache.config.XMLConfiguration;
 import org.geowebcache.config.XMLConfigurationBackwardsCompatibilityTest;
 import org.geowebcache.diskquota.bdb.BDBQuotaStore;
@@ -56,7 +56,6 @@ import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 public class BDBQuotaStoreTest {
@@ -73,10 +72,11 @@ public class BDBQuotaStoreTest {
 
     StorageBroker storageBroker;
 
-    @Rule public TemporaryFolder targetDir = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder targetDir = new TemporaryFolder();
 
-    @Rule public ExpectedException exception = ExpectedException.none();
-    @Rule public MockWepAppContextRule context = new MockWepAppContextRule();
+    @Rule
+    public MockWepAppContextRule context = new MockWepAppContextRule();
 
     Map<String, Set<String>> parameterIdsMap;
     Map<String, Set<Map<String, String>>> parametersMap;
@@ -88,9 +88,7 @@ public class BDBQuotaStoreTest {
         EasyMock.expect(cacheDirFinder.getDefaultPath())
                 .andReturn(targetDir.getRoot().getAbsolutePath())
                 .anyTimes();
-        EasyMock.expect(
-                        cacheDirFinder.findEnvVar(
-                                EasyMock.eq(DiskQuotaMonitor.GWC_DISKQUOTA_DISABLED)))
+        EasyMock.expect(cacheDirFinder.findEnvVar(EasyMock.eq(DiskQuotaMonitor.GWC_DISKQUOTA_DISABLED)))
                 .andReturn(null)
                 .anyTimes();
         EasyMock.replay(cacheDirFinder);
@@ -99,9 +97,7 @@ public class BDBQuotaStoreTest {
         storageBroker = EasyMock.createMock(StorageBroker.class);
         EasyMock.expect(storageBroker.getCachedParameterIds(EasyMock.capture(layerNameCap)))
                 .andStubAnswer(
-                        () ->
-                                parameterIdsMap.getOrDefault(
-                                        layerNameCap.getValue(), Collections.singleton(null)));
+                        () -> parameterIdsMap.getOrDefault(layerNameCap.getValue(), Collections.singleton(null)));
         EasyMock.replay(storageBroker);
         parametersMap = new HashMap<>();
         parametersMap.put(
@@ -109,19 +105,12 @@ public class BDBQuotaStoreTest {
                 Stream.of("STYLE=&SOMEPARAMETER=", "STYLE=population&SOMEPARAMETER=2.0")
                         .map(ParametersUtils::getMap)
                         .collect(Collectors.toSet()));
-        parameterIdsMap =
-                parametersMap.entrySet().stream()
-                        .collect(
-                                Collectors.toMap(
-                                        Map.Entry::getKey,
-                                        e ->
-                                                e.getValue().stream()
-                                                        .map(ParametersUtils::getKvp)
-                                                        .collect(Collectors.toSet())));
+        parameterIdsMap = parametersMap.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> e.getValue().stream().map(ParametersUtils::getKvp).collect(Collectors.toSet())));
         XMLConfiguration xmlConfig = loadXMLConfig();
         context.addBean("xmlConfig", xmlConfig, XMLConfiguration.class.getInterfaces());
-        LinkedList<TileLayerConfiguration> configList = new LinkedList<>();
-        configList.add(xmlConfig);
         context.addBean(
                 "DefaultGridsets",
                 new DefaultGridsets(true, true),
@@ -143,20 +132,17 @@ public class BDBQuotaStoreTest {
 
         store = new BDBQuotaStore(cacheDirFinder, tilePageCalculator);
         store.startUp();
-        testTileSet = tilePageCalculator.getTileSetsFor("topp:states2").iterator().next();
+        testTileSet =
+                tilePageCalculator.getTileSetsFor("topp:states2").iterator().next();
     }
 
     private XMLConfiguration loadXMLConfig() {
         XMLConfiguration xmlConfig = null;
         try {
-            xmlConfig =
-                    new XMLConfiguration(
-                            context.getContextProvider(),
-                            new MockConfigurationResourceProvider(
-                                    () ->
-                                            XMLConfiguration.class.getResourceAsStream(
-                                                    XMLConfigurationBackwardsCompatibilityTest
-                                                            .LATEST_FILENAME)));
+            xmlConfig = new XMLConfiguration(
+                    context.getContextProvider(),
+                    new MockConfigurationResourceProvider(() -> XMLConfiguration.class.getResourceAsStream(
+                            XMLConfigurationBackwardsCompatibilityTest.LATEST_FILENAME)));
         } catch (Exception e) {
             // Do nothing
         }
@@ -173,8 +159,7 @@ public class BDBQuotaStoreTest {
                         "tileSets",
                         containsInAnyOrder(
                                 new TileSet("topp:states", "EPSG:900913", "image/png", paramIds[0]),
-                                new TileSet(
-                                        "topp:states", "EPSG:900913", "image/jpeg", paramIds[0]),
+                                new TileSet("topp:states", "EPSG:900913", "image/jpeg", paramIds[0]),
                                 new TileSet("topp:states", "EPSG:900913", "image/gif", paramIds[0]),
                                 new TileSet(
                                         "topp:states",
@@ -190,8 +175,7 @@ public class BDBQuotaStoreTest {
                                         "application/vnd.google-earth.kml+xml",
                                         paramIds[0]),
                                 new TileSet("topp:states", "EPSG:900913", "image/png", paramIds[1]),
-                                new TileSet(
-                                        "topp:states", "EPSG:900913", "image/jpeg", paramIds[1]),
+                                new TileSet("topp:states", "EPSG:900913", "image/jpeg", paramIds[1]),
                                 new TileSet("topp:states", "EPSG:900913", "image/gif", paramIds[1]),
                                 new TileSet(
                                         "topp:states",
@@ -228,8 +212,8 @@ public class BDBQuotaStoreTest {
     }
 
     /**
-     * Combined test for {@link BDBQuotaStore#addToQuotaAndTileCounts(TileSet, Quota, Collection)}
-     * and {@link BDBQuotaStore#addHitsAndSetAccesTime(Collection)}
+     * Combined test for {@link BDBQuotaStore#addToQuotaAndTileCounts(TileSet, Quota, Collection)} and
+     * {@link BDBQuotaStore#addHitsAndSetAccesTime(Collection)}
      */
     @Test
     public void testPageStatsGathering() throws Exception {
@@ -248,19 +232,15 @@ public class BDBQuotaStoreTest {
         payload.setNumHits(numHits);
         payload.setNumTiles(1);
 
-        store.addToQuotaAndTileCounts(
-                tileSet, new Quota(1, StorageUnit.MiB), Collections.singleton(payload));
+        store.addToQuotaAndTileCounts(tileSet, new Quota(1, StorageUnit.MiB), Collections.singleton(payload));
 
-        Future<List<PageStats>> result =
-                store.addHitsAndSetAccesTime(Collections.singleton(payload));
+        Future<List<PageStats>> result = store.addHitsAndSetAccesTime(Collections.singleton(payload));
         List<PageStats> allStats = result.get();
         PageStats stats = allStats.get(0);
 
         assertThat(stats, hasProperty("fillFactor", closeTo(1.0f, 1e-6f)));
 
-        assertThat(
-                stats,
-                hasProperty("lastAccessTimeMinutes", equalTo(sysUtils.currentTimeMinutes())));
+        assertThat(stats, hasProperty("lastAccessTimeMinutes", equalTo(sysUtils.currentTimeMinutes())));
 
         assertThat(stats, hasProperty("frequencyOfUsePerMinute", closeTo(100f, 1e-6f)));
 
@@ -294,7 +274,8 @@ public class BDBQuotaStoreTest {
         assertThat(store, hasProperty("globallyUsedQuota", quotaEmpty()));
 
         String layerName = tilePageCalculator.getLayerNames().iterator().next();
-        TileSet tileSet = tilePageCalculator.getTileSetsFor(layerName).iterator().next();
+        TileSet tileSet =
+                tilePageCalculator.getTileSetsFor(layerName).iterator().next();
 
         Quota quotaDiff = new Quota(BigInteger.valueOf(1000));
         Collection<PageStatsPayload> tileCountDiffs = Collections.emptySet();
@@ -313,45 +294,37 @@ public class BDBQuotaStoreTest {
         String layerName = "topp:states";
         String gridSetId = "EPSG:4326";
 
-        long quotaToDelete =
-                tilePageCalculator.getTileSetsFor(layerName).stream()
-                        .filter(ts -> ts.getGridsetId().equals(gridSetId))
-                        .map(
-                                ts -> {
-                                    Quota quotaDiff = new Quota(42, StorageUnit.MiB);
-                                    try {
-                                        store.addToQuotaAndTileCounts(
-                                                ts, quotaDiff, Collections.emptySet());
-                                        TilePage page = new TilePage(ts.getId(), 0, 0, (byte) 0);
-                                        store.addHitsAndSetAccesTime(
-                                                Collections.singleton(new PageStatsPayload(page)));
-                                        return 42;
-                                    } catch (InterruptedException e) {
-                                        Thread.currentThread().interrupt();
-                                        throw new AssertionError("Unexpected Exception", e);
-                                    }
-                                })
-                        .collect(Collectors.summingLong(mb -> mb * 1024 * 1024));
+        long quotaToDelete = tilePageCalculator.getTileSetsFor(layerName).stream()
+                .filter(ts -> ts.getGridsetId().equals(gridSetId))
+                .map(ts -> {
+                    Quota quotaDiff = new Quota(42, StorageUnit.MiB);
+                    try {
+                        store.addToQuotaAndTileCounts(ts, quotaDiff, Collections.emptySet());
+                        TilePage page = new TilePage(ts.getId(), 0, 0, (byte) 0);
+                        store.addHitsAndSetAccesTime(Collections.singleton(new PageStatsPayload(page)));
+                        return 42;
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new AssertionError("Unexpected Exception", e);
+                    }
+                })
+                .collect(Collectors.summingLong(mb -> mb * 1024L * 1024L));
         assertThat(quotaToDelete, greaterThan(0L));
-        long quotaToKeep =
-                tilePageCalculator.getTileSetsFor(layerName).stream()
-                        .filter(ts -> !ts.getGridsetId().equals(gridSetId))
-                        .map(
-                                ts -> {
-                                    Quota quotaDiff = new Quota(10, StorageUnit.MiB);
-                                    try {
-                                        store.addToQuotaAndTileCounts(
-                                                ts, quotaDiff, Collections.emptySet());
-                                        TilePage page = new TilePage(ts.getId(), 0, 0, (byte) 0);
-                                        store.addHitsAndSetAccesTime(
-                                                Collections.singleton(new PageStatsPayload(page)));
-                                        return 10;
-                                    } catch (InterruptedException e) {
-                                        Thread.currentThread().interrupt();
-                                        throw new AssertionError("Unexpected Exception", e);
-                                    }
-                                })
-                        .collect(Collectors.summingLong(mb -> mb * 1024 * 1024));
+        long quotaToKeep = tilePageCalculator.getTileSetsFor(layerName).stream()
+                .filter(ts -> !ts.getGridsetId().equals(gridSetId))
+                .map(ts -> {
+                    Quota quotaDiff = new Quota(10, StorageUnit.MiB);
+                    try {
+                        store.addToQuotaAndTileCounts(ts, quotaDiff, Collections.emptySet());
+                        TilePage page = new TilePage(ts.getId(), 0, 0, (byte) 0);
+                        store.addHitsAndSetAccesTime(Collections.singleton(new PageStatsPayload(page)));
+                        return 10;
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new AssertionError("Unexpected Exception", e);
+                    }
+                })
+                .collect(Collectors.summingLong(mb -> mb * 1024L * 1024L));
         assertThat(quotaToKeep, greaterThan(0L));
 
         assertThat(store.getUsedQuotaByLayerName(layerName), bytes(quotaToDelete + quotaToKeep));
@@ -366,45 +339,37 @@ public class BDBQuotaStoreTest {
         String layerName = "topp:states";
         String parametersId = parameterIdsMap.get(layerName).iterator().next();
 
-        long quotaToDelete =
-                tilePageCalculator.getTileSetsFor(layerName).stream()
-                        .filter(ts -> ts.getParametersId().equals(parametersId))
-                        .map(
-                                ts -> {
-                                    Quota quotaDiff = new Quota(42, StorageUnit.MiB);
-                                    try {
-                                        store.addToQuotaAndTileCounts(
-                                                ts, quotaDiff, Collections.emptySet());
-                                        TilePage page = new TilePage(ts.getId(), 0, 0, (byte) 0);
-                                        store.addHitsAndSetAccesTime(
-                                                Collections.singleton(new PageStatsPayload(page)));
-                                        return 42;
-                                    } catch (InterruptedException e) {
-                                        Thread.currentThread().interrupt();
-                                        throw new AssertionError("Unexpected Exception", e);
-                                    }
-                                })
-                        .collect(Collectors.summingLong(mb -> mb * 1024 * 1024));
+        long quotaToDelete = tilePageCalculator.getTileSetsFor(layerName).stream()
+                .filter(ts -> ts.getParametersId().equals(parametersId))
+                .map(ts -> {
+                    Quota quotaDiff = new Quota(42, StorageUnit.MiB);
+                    try {
+                        store.addToQuotaAndTileCounts(ts, quotaDiff, Collections.emptySet());
+                        TilePage page = new TilePage(ts.getId(), 0, 0, (byte) 0);
+                        store.addHitsAndSetAccesTime(Collections.singleton(new PageStatsPayload(page)));
+                        return 42;
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new AssertionError("Unexpected Exception", e);
+                    }
+                })
+                .collect(Collectors.summingLong(mb -> mb * 1024L * 1024L));
         assertThat(quotaToDelete, greaterThan(0L));
-        long quotaToKeep =
-                tilePageCalculator.getTileSetsFor(layerName).stream()
-                        .filter(ts -> !ts.getParametersId().equals(parametersId))
-                        .map(
-                                ts -> {
-                                    Quota quotaDiff = new Quota(10, StorageUnit.MiB);
-                                    try {
-                                        store.addToQuotaAndTileCounts(
-                                                ts, quotaDiff, Collections.emptySet());
-                                        TilePage page = new TilePage(ts.getId(), 0, 0, (byte) 0);
-                                        store.addHitsAndSetAccesTime(
-                                                Collections.singleton(new PageStatsPayload(page)));
-                                        return 10;
-                                    } catch (InterruptedException e) {
-                                        Thread.currentThread().interrupt();
-                                        throw new AssertionError("Unexpected Exception", e);
-                                    }
-                                })
-                        .collect(Collectors.summingLong(mb -> mb * 1024 * 1024));
+        long quotaToKeep = tilePageCalculator.getTileSetsFor(layerName).stream()
+                .filter(ts -> !ts.getParametersId().equals(parametersId))
+                .map(ts -> {
+                    Quota quotaDiff = new Quota(10, StorageUnit.MiB);
+                    try {
+                        store.addToQuotaAndTileCounts(ts, quotaDiff, Collections.emptySet());
+                        TilePage page = new TilePage(ts.getId(), 0, 0, (byte) 0);
+                        store.addHitsAndSetAccesTime(Collections.singleton(new PageStatsPayload(page)));
+                        return 10;
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new AssertionError("Unexpected Exception", e);
+                    }
+                })
+                .collect(Collectors.summingLong(mb -> mb * 1024L * 1024L));
         assertThat(quotaToKeep, greaterThan(0L));
 
         assertThat(store.getUsedQuotaByLayerName(layerName), bytes(quotaToDelete + quotaToKeep));
@@ -416,7 +381,8 @@ public class BDBQuotaStoreTest {
 
     @Test
     public void testRenameLayer() throws InterruptedException {
-        final String oldLayerName = tilePageCalculator.getLayerNames().iterator().next();
+        final String oldLayerName =
+                tilePageCalculator.getLayerNames().iterator().next();
         final String newLayerName = "renamed_layer";
 
         BigInteger expectedBytes = BigInteger.valueOf(1024);
@@ -425,7 +391,8 @@ public class BDBQuotaStoreTest {
         // make sure the layer is there and has stuff
         assertThat(store.getUsedQuotaByLayerName(oldLayerName), notNullValue());
 
-        TileSet tileSet = tilePageCalculator.getTileSetsFor(oldLayerName).iterator().next();
+        TileSet tileSet =
+                tilePageCalculator.getTileSetsFor(oldLayerName).iterator().next();
         TilePage page = new TilePage(tileSet.getId(), 0, 0, (byte) 0);
         store.addHitsAndSetAccesTime(Collections.singleton(new PageStatsPayload(page)));
         store.addToQuotaAndTileCounts(tileSet, new Quota(expectedBytes), Collections.emptyList());
@@ -437,8 +404,7 @@ public class BDBQuotaStoreTest {
         store.renameLayer(oldLayerName, newLayerName);
 
         // cascade deleted old layer?
-        assertThat(
-                store.getLeastRecentlyUsedPage(Collections.singleton(oldLayerName)), nullValue());
+        assertThat(store.getLeastRecentlyUsedPage(Collections.singleton(oldLayerName)), nullValue());
         assertThat(store.getUsedQuotaByLayerName(oldLayerName), bytes(emptyBytes));
 
         // created new layer?
@@ -476,7 +442,7 @@ public class BDBQuotaStoreTest {
     public void testGetLeastRecentlyUsedPage() throws Exception {
         MockSystemUtils mockSystemUtils = new MockSystemUtils();
         mockSystemUtils.setCurrentTimeMinutes(1000);
-        mockSystemUtils.setCurrentTimeMillis(mockSystemUtils.currentTimeMinutes() * 60 * 1000);
+        mockSystemUtils.setCurrentTimeMillis(mockSystemUtils.currentTimeMinutes() * 60L * 1000L);
         SystemUtils.set(mockSystemUtils);
 
         final String layerName = testTileSet.getLayerName();
@@ -507,10 +473,7 @@ public class BDBQuotaStoreTest {
     @Test
     public void testGetTileSetById() throws Exception {
         assertThat(store.getTileSetById(testTileSet.getId()), equalTo(testTileSet));
-
-        exception.expect(IllegalArgumentException.class);
-
-        store.getTileSetById("NonExistentTileSetId");
+        assertThrows(IllegalArgumentException.class, () -> store.getTileSetById("NonExistentTileSetId"));
     }
 
     @Test
@@ -555,7 +518,7 @@ public class BDBQuotaStoreTest {
         Map<String, Quota> expectedById = new HashMap<>();
 
         for (TileSet tset : tileSets) {
-            Quota quotaDiff = new Quota(10D * Math.random(), StorageUnit.MiB);
+            Quota quotaDiff = new Quota(10D * ThreadLocalRandom.current().nextDouble(), StorageUnit.MiB);
             store.addToQuotaAndTileCounts(tset, quotaDiff, Collections.EMPTY_SET);
             store.addToQuotaAndTileCounts(tset, quotaDiff, Collections.EMPTY_SET);
             Quota tsetQuota = new Quota(quotaDiff);
@@ -580,9 +543,9 @@ public class BDBQuotaStoreTest {
         payload.setNumHits(numHits);
         payload.setNumTiles(5);
 
-        store.addToQuotaAndTileCounts(
-                testTileSet, new Quota(1, StorageUnit.MiB), Collections.singleton(payload));
-        List<PageStats> stats = store.addHitsAndSetAccesTime(Collections.singleton(payload)).get();
+        store.addToQuotaAndTileCounts(testTileSet, new Quota(1, StorageUnit.MiB), Collections.singleton(payload));
+        List<PageStats> stats =
+                store.addHitsAndSetAccesTime(Collections.singleton(payload)).get();
         assertThat(stats, contains(hasProperty("fillFactor", greaterThan(0f))));
         PageStats pageStats = store.setTruncated(page);
         assertThat(pageStats, hasProperty("fillFactor", closeTo(0f, 0f)));
@@ -595,14 +558,14 @@ public class BDBQuotaStoreTest {
     }
 
     static Matcher<Float> closeTo(float f, float epsilon) {
-        return new BaseMatcher<Float>() {
+        return new BaseMatcher<>() {
             Matcher<Double> doubleMatcher = Matchers.closeTo(f, epsilon);
 
             @Override
             @SuppressWarnings("SelfAssignment") // this actually changes its fp representation
             public boolean matches(Object item) {
-                if (item instanceof Float) {
-                    item = (double) (float) item;
+                if (item instanceof Float float1) {
+                    item = (double) float1;
                 }
                 return doubleMatcher.matches(item);
             }

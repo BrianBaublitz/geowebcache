@@ -1,5 +1,6 @@
 package org.geowebcache.service.gmaps;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
@@ -7,7 +8,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import javax.servlet.http.HttpServletResponse;
 import org.geowebcache.GeoWebCacheException;
 import org.geowebcache.config.DefaultGridsets;
 import org.geowebcache.conveyor.ConveyorTile;
@@ -90,7 +90,7 @@ public class GMapsConverterTest {
     private static final String TEST_LAYER_NAME = "testLayer";
 
     @Test
-    public void testConveyorCreation() {
+    public void testConveyorCreation() throws UnsupportedEncodingException, GeoWebCacheException {
         StorageBroker sb = null;
 
         List<ParameterFilter> filters = new ArrayList<>();
@@ -101,23 +101,11 @@ public class GMapsConverterTest {
         filters.add(parameterFilter);
 
         WMSLayer wmsLayer =
-                new WMSLayer(
-                        TEST_LAYER_NAME,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        filters,
-                        null,
-                        null,
-                        true,
-                        null);
+                new WMSLayer(TEST_LAYER_NAME, null, null, null, null, null, filters, null, null, true, null);
 
         TileLayerDispatcher tld = new TileLayerDispatcherMock(wmsLayer);
 
-        GridSetBroker gsb =
-                new GridSetBroker(Collections.singletonList(new DefaultGridsets(true, true)));
+        GridSetBroker gsb = new GridSetBroker(Collections.singletonList(new DefaultGridsets(true, true)));
 
         wmsLayer.initialize(gsb);
 
@@ -132,16 +120,11 @@ public class GMapsConverterTest {
 
         GMapsConverter converter = new GMapsConverter(sb, tld, gsb);
 
-        try {
-            ConveyorTile conveyorTile = converter.getConveyor(request, response);
-            Map<String, String> parameters = conveyorTile.getParameters();
-            Assert.assertNotNull(parameters);
-            // assertTrue(parameters.contains(URLEncoder.encode(CQL_FILTER_PARAMETER_VALUE,"UTF8")));
-            Assert.assertEquals(
-                    CQL_FILTER_PARAMETER_VALUE,
-                    URLDecoder.decode(parameters.get(CQL_FILTER_PARAMETER_NAME), "UTF8"));
-        } catch (UnsupportedEncodingException | GeoWebCacheException e) {
-            Assert.fail();
-        }
+        ConveyorTile conveyorTile = converter.getConveyor(request, response);
+        Map<String, String> parameters = conveyorTile.getParameters();
+        Assert.assertNotNull(parameters);
+        // assertTrue(parameters.contains(URLEncoder.encode(CQL_FILTER_PARAMETER_VALUE,"UTF8")));
+        Assert.assertEquals(
+                CQL_FILTER_PARAMETER_VALUE, URLDecoder.decode(parameters.get(CQL_FILTER_PARAMETER_NAME), "UTF8"));
     }
 }

@@ -1,25 +1,24 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Dana Lambert, Catalyst IT Ltd NZ, Copyright 2020
  */
 package org.geowebcache.swift;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
@@ -79,29 +78,36 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /** Unit testing for the Swift Blobstore class */
+@SuppressWarnings("DirectInvocationOnMock")
 public class SwiftBlobStoreTest {
 
     private String TEST_KEY = "test/key";
 
     private SwiftBlobStore swiftBlobStore;
 
-    @Mock private ObjectApi objectApi;
+    @Mock
+    private ObjectApi objectApi;
 
     private TileObject sampleTileObject;
 
     private TMSKeyBuilder keyBuilder;
 
-    @Mock private SwiftApi swiftApi;
+    @Mock
+    private SwiftApi swiftApi;
 
-    @Mock private BulkApi bulkApi;
+    @Mock
+    private BulkApi bulkApi;
 
     private BlobStoreListenerList testListeners;
 
-    @Mock private RegionScopedBlobStoreContext blobStoreContext;
+    @Mock
+    private RegionScopedBlobStoreContext blobStoreContext;
 
-    @Mock private RegionScopedSwiftBlobStore blobStore;
+    @Mock
+    private RegionScopedSwiftBlobStore blobStore;
 
-    @Mock private PageSet pageSet;
+    @Mock
+    private PageSet pageSet;
 
     private static final String VALID_TEST_LAYER_NAME = "TestLayer";
     private static final String INVALID_TEST_LAYER_NAME = "NonExistentLayer";
@@ -118,9 +124,8 @@ public class SwiftBlobStoreTest {
         long[] xyz = {1L, 2L, 3L};
         Map<String, String> parameters = new HashMap<>();
         parameters.put("test param key", "test param value");
-        sampleTileObject =
-                TileObject.createCompleteTileObject(
-                        VALID_TEST_LAYER_NAME, xyz, "EPSG:4326", "image/jpeg", parameters, bytes);
+        sampleTileObject = TileObject.createCompleteTileObject(
+                VALID_TEST_LAYER_NAME, xyz, "EPSG:4326", "image/jpeg", parameters, bytes);
 
         when(swiftApi.getObjectApi(any(), any())).thenReturn(objectApi);
         when(swiftApi.getBulkApi(any())).thenReturn(bulkApi);
@@ -185,8 +190,7 @@ public class SwiftBlobStoreTest {
         // Add a listener to the test listeners list and test it exists in the list
         BlobStoreListener swiftListener = mock(BlobStoreListener.class);
         this.testListeners.addListener(swiftListener);
-        ArrayList<BlobStoreListener> testListenersList =
-                (ArrayList<BlobStoreListener>) testListeners.getListeners();
+        ArrayList<BlobStoreListener> testListenersList = (ArrayList<BlobStoreListener>) testListeners.getListeners();
         assertTrue(testListenersList.contains(swiftListener));
 
         // Call the blobstore method to delete the listener
@@ -264,44 +268,38 @@ public class SwiftBlobStoreTest {
 
     @Test
     @SuppressWarnings("PMD.CloseResource")
-    public void get() {
+    public void get() throws StorageException {
         String thePayloadData = "Test Content";
         Date lastModified = new Date();
-        ByteSourcePayload testByteSourcePayload =
-                new ByteSourcePayload(
-                        new ByteSource() {
-                            @Override
-                            public InputStream openStream() {
-                                return new ByteArrayInputStream(thePayloadData.getBytes());
-                            }
-                        });
+        ByteSourcePayload testByteSourcePayload = new ByteSourcePayload(new ByteSource() {
+            @Override
+            public InputStream openStream() {
+                return new ByteArrayInputStream(thePayloadData.getBytes());
+            }
+        });
 
         SwiftObject swiftObject = mock(SwiftObject.class);
         when(swiftObject.getLastModified()).thenReturn(lastModified);
         when(swiftObject.getPayload()).thenReturn(testByteSourcePayload);
 
-        try {
-            when(objectApi.get("sample/key")).thenReturn(swiftObject);
-            boolean result = this.swiftBlobStore.get(sampleTileObject);
+        when(objectApi.get("sample/key")).thenReturn(swiftObject);
+        boolean result = this.swiftBlobStore.get(sampleTileObject);
 
-            verify(keyBuilder, times(1)).forTile(sampleTileObject);
-            verify(objectApi, times(1)).get("sample/key");
-            verify(swiftObject, times(1)).getPayload();
+        verify(keyBuilder, times(1)).forTile(sampleTileObject);
+        verify(objectApi, times(1)).get("sample/key");
+        verify(swiftObject, times(1)).getPayload();
 
-            ByteArrayResource expectedByteArray = new ByteArrayResource(thePayloadData.getBytes());
-            ByteArrayResource actualByteArray = (ByteArrayResource) sampleTileObject.getBlob();
+        ByteArrayResource expectedByteArray = new ByteArrayResource(thePayloadData.getBytes());
+        ByteArrayResource actualByteArray = (ByteArrayResource) sampleTileObject.getBlob();
 
-            assertEquals(thePayloadData.length(), sampleTileObject.getBlobSize());
-            assertArrayEquals(expectedByteArray.getContents(), actualByteArray.getContents());
-            assertEquals(lastModified.getTime(), sampleTileObject.getCreated());
-            assertTrue(result);
+        assertEquals(thePayloadData.length(), sampleTileObject.getBlobSize());
+        assertArrayEquals(expectedByteArray.getContents(), actualByteArray.getContents());
+        assertEquals(lastModified.getTime(), sampleTileObject.getCreated());
+        assertTrue(result);
 
-            when(objectApi.get("sample/key")).thenReturn(null);
-            result = this.swiftBlobStore.get(sampleTileObject);
-            assertFalse(result);
-        } catch (StorageException e) {
-            fail("A storage exception was not expected to be thrown");
-        }
+        when(objectApi.get("sample/key")).thenReturn(null);
+        result = this.swiftBlobStore.get(sampleTileObject);
+        assertFalse(result);
     }
 
     @Test
@@ -340,23 +338,20 @@ public class SwiftBlobStoreTest {
 
         // Range bounds format: {{minx, maxx, miny, maxy, zoomLevel}, ...}
         long[][] rangebounds = {{1L, 2L, 1L, 2L, 1L}, {1L, 2L, 1L, 2L, 2L}, {1L, 2L, 1L, 2L, 3L}};
-        TileRange realTestTileRange =
-                new TileRange(
-                        VALID_TEST_LAYER_NAME,
-                        "test_gridset_id",
-                        1,
-                        2,
-                        rangebounds,
-                        mimeType,
-                        new HashMap<>(),
-                        "test_param_id");
+        TileRange realTestTileRange = new TileRange(
+                VALID_TEST_LAYER_NAME,
+                "test_gridset_id",
+                1,
+                2,
+                rangebounds,
+                mimeType,
+                new HashMap<>(),
+                "test_param_id");
 
         String testCoordinatesPrefix = "test/coord/prefix";
         SwiftObject testSwiftObject = mock(SwiftObject.class);
 
-        doReturn(testCoordinatesPrefix)
-                .when(this.keyBuilder)
-                .coordinatesPrefix(testTileRange, true);
+        doReturn(testCoordinatesPrefix).when(this.keyBuilder).coordinatesPrefix(testTileRange, true);
         doReturn("layer_id").when(this.keyBuilder).layerId(VALID_TEST_LAYER_NAME);
 
         // Test when object is null from the objectApi
@@ -376,12 +371,11 @@ public class SwiftBlobStoreTest {
 
         // Based on the tile range above this should be the resulting keys which should be
         // called with bulk delete.
-        List<String> expectedKeys =
-                Arrays.asList(
-                        // Zoom level 1
-                        "test_prefix/layer_id/test_gridset_id/test_param_id/1/1/2.png",
-                        // Zoom level 2
-                        "test_prefix/layer_id/test_gridset_id/test_param_id/2/1/2.png");
+        List<String> expectedKeys = Arrays.asList(
+                // Zoom level 1
+                "test_prefix/layer_id/test_gridset_id/test_param_id/1/1/2.png",
+                // Zoom level 2
+                "test_prefix/layer_id/test_gridset_id/test_param_id/2/1/2.png");
         verify(this.bulkApi, times(1)).bulkDelete(expectedKeys);
 
         // Test when object is valid and listeners are not empty
@@ -401,9 +395,7 @@ public class SwiftBlobStoreTest {
     public void deleteByGridsetId() throws InterruptedException {
         String testGridSetID = "TestGridSetID";
         String testGridsetPrefix = "test/gridset/prefix";
-        doReturn(testGridsetPrefix)
-                .when(this.keyBuilder)
-                .forGridset(VALID_TEST_LAYER_NAME, testGridSetID);
+        doReturn(testGridsetPrefix).when(this.keyBuilder).forGridset(VALID_TEST_LAYER_NAME, testGridSetID);
 
         // Test with a valid layer name and prefix and deletion unsuccessful
         doReturn(false).when(pageSet).isEmpty();
@@ -411,8 +403,7 @@ public class SwiftBlobStoreTest {
         verify(this.keyBuilder, times(1)).forGridset(VALID_TEST_LAYER_NAME, testGridSetID);
         verify(this.swiftBlobStore, times(1)).deleteByPath(eq(testGridsetPrefix), any());
         Thread.sleep(500);
-        verify(this.testListeners, times(0))
-                .sendGridSubsetDeleted(VALID_TEST_LAYER_NAME, testGridSetID);
+        verify(this.testListeners, times(0)).sendGridSubsetDeleted(VALID_TEST_LAYER_NAME, testGridSetID);
 
         // Test with a valid layer name and prefix and deletion successful
         doReturn(true).when(pageSet).isEmpty();
@@ -420,8 +411,7 @@ public class SwiftBlobStoreTest {
         verify(this.keyBuilder, times(2)).forGridset(VALID_TEST_LAYER_NAME, testGridSetID);
         verify(this.swiftBlobStore, times(2)).deleteByPath(eq(testGridsetPrefix), any());
         Thread.sleep(500);
-        verify(this.testListeners, times(1))
-                .sendGridSubsetDeleted(VALID_TEST_LAYER_NAME, testGridSetID);
+        verify(this.testListeners, times(1)).sendGridSubsetDeleted(VALID_TEST_LAYER_NAME, testGridSetID);
 
         // Test when layer name is null
         try {
@@ -489,16 +479,14 @@ public class SwiftBlobStoreTest {
         // When old layer is null
         boolean result = this.swiftBlobStore.rename(VALID_TEST_LAYER_NAME, "NewLayerName");
         verify(objectApi, times(1)).get(VALID_TEST_LAYER_NAME);
-        verify(this.testListeners, times(0))
-                .sendLayerRenamed(VALID_TEST_LAYER_NAME, "NewLayerName");
+        verify(this.testListeners, times(0)).sendLayerRenamed(VALID_TEST_LAYER_NAME, "NewLayerName");
         assertTrue(result);
 
         // When old layer is not null
         when(this.objectApi.get(VALID_TEST_LAYER_NAME)).thenReturn(mock(SwiftObject.class));
         result = this.swiftBlobStore.rename(VALID_TEST_LAYER_NAME, "NewLayerName");
         verify(objectApi, times(2)).get(VALID_TEST_LAYER_NAME);
-        verify(this.testListeners, times(1))
-                .sendLayerRenamed(VALID_TEST_LAYER_NAME, "NewLayerName");
+        verify(this.testListeners, times(1)).sendLayerRenamed(VALID_TEST_LAYER_NAME, "NewLayerName");
         assertTrue(result);
     }
 
@@ -537,9 +525,7 @@ public class SwiftBlobStoreTest {
         assertNull(result);
 
         // Test if metadata is null
-        result =
-                this.swiftBlobStore.getLayerMetadata(
-                        "valid layer name without metadata", "sample_key");
+        result = this.swiftBlobStore.getLayerMetadata("valid layer name without metadata", "sample_key");
         assertNull(result);
 
         // Test when layer name is valid
@@ -667,19 +653,15 @@ public class SwiftBlobStoreTest {
         }
 
         Set<String> dummyParamsPrefixes = new HashSet<>(Arrays.asList("prefix/one", "prefix/two"));
-        doReturn(dummyParamsPrefixes)
-                .when(this.keyBuilder)
-                .forParameters(VALID_TEST_LAYER_NAME, testParametersId);
+        doReturn(dummyParamsPrefixes).when(this.keyBuilder).forParameters(VALID_TEST_LAYER_NAME, testParametersId);
 
         // Test outcome when all deletions are successful
         doReturn(true).when(this.swiftBlobStore).deleteByPath("prefix/one");
         doReturn(true).when(this.swiftBlobStore).deleteByPath("prefix/two");
-        boolean outcome =
-                this.swiftBlobStore.deleteByParametersId(VALID_TEST_LAYER_NAME, testParametersId);
+        boolean outcome = this.swiftBlobStore.deleteByParametersId(VALID_TEST_LAYER_NAME, testParametersId);
         verify(this.swiftBlobStore, times(1)).deleteByPath("prefix/one");
         verify(this.swiftBlobStore, times(1)).deleteByPath("prefix/two");
-        verify(this.testListeners, times(1))
-                .sendParametersDeleted(VALID_TEST_LAYER_NAME, testParametersId);
+        verify(this.testListeners, times(1)).sendParametersDeleted(VALID_TEST_LAYER_NAME, testParametersId);
         assertTrue(outcome);
 
         // Test outcome when one of the deletion fails
@@ -687,8 +669,7 @@ public class SwiftBlobStoreTest {
         outcome = this.swiftBlobStore.deleteByParametersId(VALID_TEST_LAYER_NAME, testParametersId);
         verify(this.swiftBlobStore, times(2)).deleteByPath("prefix/one");
         verify(this.swiftBlobStore, times(2)).deleteByPath("prefix/two");
-        verify(this.testListeners, times(1))
-                .sendParametersDeleted(VALID_TEST_LAYER_NAME, testParametersId);
+        verify(this.testListeners, times(1)).sendParametersDeleted(VALID_TEST_LAYER_NAME, testParametersId);
         assertFalse(outcome);
     }
 
@@ -696,28 +677,19 @@ public class SwiftBlobStoreTest {
     @Ignore // unreliable test timing
     public void deleteWhenUploadExists() throws Exception {
         BlockingQueue<Runnable> taskQueue = spy(new LinkedBlockingQueue<>(1000));
-        @SuppressWarnings("PMD.CloseResource") // implements AutoCloseable in Java 21
-        ThreadPoolExecutor executor =
-                spy(
-                        new ThreadPoolExecutor(
-                                1,
-                                1,
-                                60L,
-                                TimeUnit.SECONDS,
-                                taskQueue,
-                                new ThreadPoolExecutor.CallerRunsPolicy()));
+        ThreadPoolExecutor executor = spy(new ThreadPoolExecutor(
+                1, 1, 60L, TimeUnit.SECONDS, taskQueue, new ThreadPoolExecutor.CallerRunsPolicy()));
 
         // Must create three runnables
         //    1) consumed immediately which blocks for a time
         //    2) a mock upload to cancel when we delete the path being uploaded to
         //    3) a mock upload to proceed as its not on the same path
-        Runnable mockUpload1 =
-                () -> {
-                    try {
-                        Thread.sleep(200);
-                    } catch (InterruptedException e) {
-                    }
-                };
+        Runnable mockUpload1 = () -> {
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+            }
+        };
         SwiftUploadTask mockUpload2 = mock(SwiftUploadTask.class);
         SwiftUploadTask mockUpload3 = mock(SwiftUploadTask.class);
 

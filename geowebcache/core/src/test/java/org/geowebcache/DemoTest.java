@@ -1,8 +1,8 @@
 package org.geowebcache;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -47,23 +47,11 @@ public class DemoTest {
         // Creating an advertised Layer and an unadvertised one
         HashMap<String, GridSubset> subSets = new HashMap<>();
         TileLayer advertisedLayer =
-                new WMSLayer(
-                        "testAdv", null, null, null, null, subSets, null, null, null, false, null);
+                new WMSLayer("testAdv", null, null, null, null, subSets, null, null, null, false, null);
         advertisedLayer.setEnabled(true);
         advertisedLayer.setAdvertised(true);
         TileLayer unAdvertisedLayer =
-                new WMSLayer(
-                        "testNotAdv",
-                        null,
-                        null,
-                        null,
-                        null,
-                        subSets,
-                        null,
-                        null,
-                        null,
-                        false,
-                        null);
+                new WMSLayer("testNotAdv", null, null, null, null, subSets, null, null, null, false, null);
         unAdvertisedLayer.setEnabled(true);
         unAdvertisedLayer.setAdvertised(false);
 
@@ -115,8 +103,7 @@ public class DemoTest {
         when(layer.getGridSubsets()).thenReturn(gridSubsets);
         when(layer.getGridSubset(epsg4326)).thenReturn(subSet2);
         when(layer.getGridSubset(unescapedSubset)).thenReturn(subSet1);
-        when(layer.getMimeTypes())
-                .thenReturn(Collections.singletonList(MimeType.createFromFormat("image/png")));
+        when(layer.getMimeTypes()).thenReturn(Collections.singletonList(MimeType.createFromFormat("image/png")));
 
         TileLayerDispatcher tld = mock(TileLayerDispatcher.class);
         when(tld.getLayerNames()).thenReturn(Collections.singleton(unescapedLayer));
@@ -136,10 +123,8 @@ public class DemoTest {
     public void testEscapingWithLayer() throws Exception {
         String unescapedLayer = "layer'\"><";
         String escapedLayer = "layer'&quot;&gt;&lt;";
-        String escapedLayerJS = "layer\\x27\\x22><";
         String unescapedSubset = "ESPG:1234'\"><";
         String escapedSubset = "ESPG:1234'&quot;&gt;&lt;";
-        String escapedSubsetJS = "ESPG:1234\\x27\\x22><";
 
         GridSet gridSet = mock(GridSet.class);
         when(gridSet.getName()).thenReturn(unescapedSubset);
@@ -161,10 +146,8 @@ public class DemoTest {
 
         String unescapedString = "string'\"><";
         String escapedString = "string'&quot;&gt;&lt;";
-        String escapedStringJS = "string\\x27\\x22><";
         String unescapedRegex = "regex'\"><";
         String escapedRegex = "regex'&quot;&gt;&lt;";
-        String escapedRegexJS = "regex\\x27\\x22><";
         StringParameterFilter stringFilter = new StringParameterFilter();
         stringFilter.setKey(unescapedString);
         RegexParameterFilter regexFilter = new RegexParameterFilter();
@@ -180,15 +163,51 @@ public class DemoTest {
 
         assertThat(result, not(containsString(unescapedLayer)));
         assertThat(result, containsString(escapedLayer));
-        assertThat(result, containsString(escapedLayerJS));
         assertThat(result, not(containsString(unescapedSubset)));
         assertThat(result, containsString(escapedSubset));
-        assertThat(result, containsString(escapedSubsetJS));
         assertThat(result, not(containsString(unescapedString)));
         assertThat(result, containsString(escapedString));
-        assertThat(result, containsString(escapedStringJS));
         assertThat(result, not(containsString(unescapedRegex)));
         assertThat(result, containsString(escapedRegex));
-        assertThat(result, containsString(escapedRegexJS));
+    }
+
+    @Test
+    public void testRemovedInlineJavaScript() throws Exception {
+        GridSet gridSet = mock(GridSet.class);
+        when(gridSet.getName()).thenReturn("EPSG:4326");
+
+        GridSubset subSet = mock(GridSubset.class);
+        when(subSet.getName()).thenReturn("EPSG:4326");
+        when(subSet.getGridSet()).thenReturn(gridSet);
+        when(subSet.getGridNames()).thenReturn(new String[] {"EPSG:4326"});
+        when(subSet.getSRS()).thenReturn(SRS.getEPSG4326());
+        when(subSet.getGridSetBounds()).thenReturn(BoundingBox.WORLD4326);
+        when(subSet.getOriginalExtent()).thenReturn(BoundingBox.WORLD4326);
+
+        TileLayer layer = mock(TileLayer.class);
+        when(layer.getName()).thenReturn("layer");
+        when(layer.isAdvertised()).thenReturn(true);
+        when(layer.getGridSubsets()).thenReturn(Collections.singleton("EPSG:4326"));
+        when(layer.getGridSubset("EPSG:4326")).thenReturn(subSet);
+        when(layer.getDefaultMimeType()).thenReturn(MimeType.createFromFormat("image/png"));
+
+        StringParameterFilter stringFilter = new StringParameterFilter();
+        stringFilter.setKey("STRING");
+        RegexParameterFilter regexFilter = new RegexParameterFilter();
+        regexFilter.setKey("REGEX");
+        when(layer.getParameterFilters()).thenReturn(Arrays.asList(stringFilter, regexFilter));
+
+        TileLayerDispatcher tld = mock(TileLayerDispatcher.class);
+        when(tld.getTileLayer("layer")).thenReturn(layer);
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        Demo.makeMap(tld, null, "layer", new MockHttpServletRequest(), response);
+        String result = response.getContentAsString();
+
+        assertThat(result, containsString("<script src=\"../rest/web/openlayers3/ol.js\"></script>"));
+        assertThat(result, containsString("<script src=\"../rest/web/demo.js\"></script>"));
+        assertThat(result, not(containsString("<script>")));
+        assertThat(result, not(containsString(" onchange=")));
+        assertThat(result, not(containsString(" onblur=")));
     }
 }

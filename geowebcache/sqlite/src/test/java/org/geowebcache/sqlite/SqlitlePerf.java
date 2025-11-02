@@ -1,14 +1,13 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Nuno Oliveira, GeoSolutions S.A.S., Copyright 2016
  */
@@ -33,8 +32,8 @@ import org.geowebcache.storage.TileObject;
 import org.geowebcache.storage.blobstore.file.FileBlobStore;
 
 /**
- * Measures the performance of the {@link SqliteConnectionManager} and the {@link MbtilesBlobStore}
- * against using a raw query.
+ * Measures the performance of the {@link SqliteConnectionManager} and the {@link MbtilesBlobStore} against using a raw
+ * query.
  */
 final class SqlitlePerf {
 
@@ -51,7 +50,7 @@ final class SqlitlePerf {
         // create the directory that will contain all created files
         File rootDirectory = Files.createTempDirectory("gwc-").toFile();
         if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.info(String.format("Root directory '%s'.", rootDirectory));
+            LOGGER.info("Root directory '%s'.".formatted(rootDirectory));
         }
         // seeding file system
         long[][] tiles = new long[TILES][3];
@@ -71,31 +70,28 @@ final class SqlitlePerf {
     }
 
     /** Select the created tiles using a raw connection. */
-    private static void rawSqlitle(File rootDirectory, File seedFile, long[][] tiles)
-            throws Exception {
+    private static void rawSqlitle(File rootDirectory, File seedFile, long[][] tiles) throws Exception {
         // creating a new database by copying the seeded one
         File databaseFile = new File(rootDirectory, "raw_perf_test.sqlite");
         if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.info(String.format("Start raw select from file '%s'.", databaseFile));
+            LOGGER.info("Start raw select from file '%s'.".formatted(databaseFile));
         }
         FileUtils.copyFile(seedFile, databaseFile);
         // submitting the select tasks
-        @SuppressWarnings("PMD.CloseResource") // implements AutoCloseable in Java 21
         ExecutorService executor = Executors.newFixedThreadPool(WORKERS);
         long startTime = System.currentTimeMillis();
-        try (Connection connection =
-                DriverManager.getConnection("jdbc:sqlite:" + seedFile.getPath()); ) {
+        try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + seedFile.getPath())) {
             for (int i = 0; i < tiles.length; i++) {
                 long[] tile = tiles[i];
                 executor.submit((Runnable) () -> getTile(connection, tile));
                 if (i != 0 && i % 10000 == 0) {
                     if (LOGGER.isLoggable(Level.FINE)) {
-                        LOGGER.fine(String.format("Submitted %d select tasks.", i));
+                        LOGGER.fine("Submitted %d select tasks.".formatted(i));
                     }
                 }
             }
             if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.fine(String.format("Submitted %d select tasks.", TILES));
+                LOGGER.fine("Submitted %d select tasks.".formatted(TILES));
             }
             // lets wait for the workers to finish
             executor.shutdown();
@@ -103,50 +99,41 @@ final class SqlitlePerf {
             // computing some stats
             long endTime = System.currentTimeMillis();
             if (LOGGER.isLoggable(Level.INFO)) {
-                LOGGER.info(String.format("Tiles raw select time '%d'.", endTime - startTime));
+                LOGGER.info("Tiles raw select time '%d'.".formatted(endTime - startTime));
             }
             if (LOGGER.isLoggable(Level.INFO)) {
                 LOGGER.info(
-                        String.format(
-                                "Tiles raw selected per second '%f'.",
-                                TILES / (float) (endTime - startTime) * 1000));
+                        "Tiles raw selected per second '%f'.".formatted(TILES / (float) (endTime - startTime) * 1000));
             }
         }
         FileUtils.deleteQuietly(databaseFile);
     }
 
     /** Select the created tiles using a connection provide by the connection manager. */
-    private static void pooledSqlitle(File rootDirectory, File seedFile, long[][] tiles)
-            throws Exception {
+    private static void pooledSqlitle(File rootDirectory, File seedFile, long[][] tiles) throws Exception {
         // creating a new database by copying the seeded one
         File databaseFile = new File(rootDirectory, "pooled_perf_test.sqlite");
         if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.info(String.format("Start pooled select from file '%s'.", databaseFile));
+            LOGGER.info("Start pooled select from file '%s'.".formatted(databaseFile));
         }
         FileUtils.copyFile(seedFile, databaseFile);
         // submitting the select tasks
-        @SuppressWarnings("PMD.CloseResource") // implements AutoCloseable in Java 21
         ExecutorService executor = Executors.newFixedThreadPool(WORKERS);
         SqliteConnectionManager connectionManager = new SqliteConnectionManager(10, 2000);
         long startTime = System.currentTimeMillis();
         for (int i = 0; i < tiles.length; i++) {
             long[] tile = tiles[i];
-            executor.submit(
-                    () ->
-                            connectionManager.doWork(
-                                    databaseFile,
-                                    true,
-                                    connection -> {
-                                        getTile(connection, tile);
-                                    }));
+            executor.submit(() -> connectionManager.doWork(databaseFile, true, connection -> {
+                getTile(connection, tile);
+            }));
             if (i != 0 && i % 10000 == 0) {
                 if (LOGGER.isLoggable(Level.FINE)) {
-                    LOGGER.fine(String.format("Submitted %d select tasks.", i));
+                    LOGGER.fine("Submitted %d select tasks.".formatted(i));
                 }
             }
         }
         if (LOGGER.isLoggable(Level.FINE)) {
-            LOGGER.fine(String.format("Submitted %d select tasks.", TILES));
+            LOGGER.fine("Submitted %d select tasks.".formatted(TILES));
         }
         // lets wait for the workers to finish
         executor.shutdown();
@@ -154,13 +141,11 @@ final class SqlitlePerf {
         // computing some stats
         long endTime = System.currentTimeMillis();
         if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.info(String.format("Tiles pooled select time '%d'.", endTime - startTime));
+            LOGGER.info("Tiles pooled select time '%d'.".formatted(endTime - startTime));
         }
         if (LOGGER.isLoggable(Level.INFO)) {
             LOGGER.info(
-                    String.format(
-                            "Tiles pooled selected per second '%f'.",
-                            TILES / (float) (endTime - startTime) * 1000));
+                    "Tiles pooled selected per second '%f'.".formatted(TILES / (float) (endTime - startTime) * 1000));
         }
         // clean everything
         connectionManager.reapAllConnections();
@@ -169,51 +154,43 @@ final class SqlitlePerf {
     }
 
     /** Retrieve the created tiles using the mbtiles blobstore. */
-    private static void mbtilesStore(File rootDirectory, File seedFile, long[][] tiles)
-            throws Exception {
+    private static void mbtilesStore(File rootDirectory, File seedFile, long[][] tiles) throws Exception {
         // creating a new database by copying the seeded one
         File databaseFile =
-                new File(
-                        rootDirectory,
-                        Utils.buildPath("grid", "layer", "image_png", "mbtiles_perf_test.sqlite"));
+                new File(rootDirectory, Utils.buildPath("grid", "layer", "image_png", "mbtiles_perf_test.sqlite"));
         if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.info(String.format("Start mbtiles select from file '%s'.", databaseFile));
+            LOGGER.info("Start mbtiles select from file '%s'.".formatted(databaseFile));
         }
         FileUtils.copyFile(seedFile, databaseFile);
         // submitting the select tasks
-        @SuppressWarnings("PMD.CloseResource") // implements AutoCloseable in Java 21
         ExecutorService executor = Executors.newFixedThreadPool(WORKERS);
         long startTime = System.currentTimeMillis();
         // mbtiles store configuration
         MbtilesInfo configuration = new MbtilesInfo();
         configuration.setRootDirectory(rootDirectory.getPath());
-        configuration.setTemplatePath(
-                Utils.buildPath("{grid}", "{layer}", "{format}", "mbtiles_perf_test.sqlite"));
+        configuration.setTemplatePath(Utils.buildPath("{grid}", "{layer}", "{format}", "mbtiles_perf_test.sqlite"));
         configuration.setUseCreateTime(false);
         // instantiate the mbtiles blobstore
         SqliteConnectionManager connectionManager = new SqliteConnectionManager(10, 2000);
         MbtilesBlobStore mbtilesBlobStore = new MbtilesBlobStore(configuration, connectionManager);
         for (int i = 0; i < tiles.length; i++) {
             long[] tile = tiles[i];
-            executor.submit(
-                    () -> {
-                        TileObject mbtile =
-                                TileObject.createQueryTileObject(
-                                        "layer", tile, "grid", "image/png", null);
-                        try {
-                            mbtilesBlobStore.get(mbtile);
-                        } catch (Exception exception) {
-                            throw Utils.exception(exception, "Error retrieving tile '%s'.", mbtile);
-                        }
-                    });
+            executor.submit(() -> {
+                TileObject mbtile = TileObject.createQueryTileObject("layer", tile, "grid", "image/png", null);
+                try {
+                    mbtilesBlobStore.get(mbtile);
+                } catch (Exception exception) {
+                    throw Utils.exception(exception, "Error retrieving tile '%s'.", mbtile);
+                }
+            });
             if (i != 0 && i % 10000 == 0) {
                 if (LOGGER.isLoggable(Level.FINE)) {
-                    LOGGER.fine(String.format("Submitted %d select tasks.", i));
+                    LOGGER.fine("Submitted %d select tasks.".formatted(i));
                 }
             }
         }
         if (LOGGER.isLoggable(Level.FINE)) {
-            LOGGER.fine(String.format("Submitted %d select tasks.", TILES));
+            LOGGER.fine("Submitted %d select tasks.".formatted(TILES));
         }
         // lets wait for the workers to finish
         executor.shutdown();
@@ -221,15 +198,11 @@ final class SqlitlePerf {
         // computing some stats
         long endTime = System.currentTimeMillis();
         if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.info(
-                    String.format(
-                            "Tiles mbtiles blobstore select time '%d'.", endTime - startTime));
+            LOGGER.info("Tiles mbtiles blobstore select time '%d'.".formatted(endTime - startTime));
         }
         if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.info(
-                    String.format(
-                            "Tiles mbtiles blobstore selected per second '%f'.",
-                            TILES / (float) (endTime - startTime) * 1000));
+            LOGGER.info("Tiles mbtiles blobstore selected per second '%f'."
+                    .formatted(TILES / (float) (endTime - startTime) * 1000));
         }
         // clean everything
         connectionManager.reapAllConnections();
@@ -240,35 +213,31 @@ final class SqlitlePerf {
     /** Retrieve the created tiles using the file blobstore. */
     private static void fileStore(File seedDirectory, long[][] tiles) throws Exception {
         if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.info(String.format("Start reading from directory'%s'.", seedDirectory));
+            LOGGER.info("Start reading from directory'%s'.".formatted(seedDirectory));
         }
         // submitting the read tasks
-        @SuppressWarnings("PMD.CloseResource") // implements AutoCloseable in Java 21
         ExecutorService executor = Executors.newFixedThreadPool(WORKERS);
         long startTime = System.currentTimeMillis();
         // instantiate the file blobstore
         BlobStore fileBlobStore = new FileBlobStore(seedDirectory.getPath());
         for (int i = 0; i < tiles.length; i++) {
             long[] tile = tiles[i];
-            executor.submit(
-                    () -> {
-                        TileObject mbtile =
-                                TileObject.createQueryTileObject(
-                                        "layer", tile, "grid", "image/png", null);
-                        try {
-                            fileBlobStore.get(mbtile);
-                        } catch (Exception exception) {
-                            throw Utils.exception(exception, "Error retrieving tile '%s'.", mbtile);
-                        }
-                    });
+            executor.submit(() -> {
+                TileObject mbtile = TileObject.createQueryTileObject("layer", tile, "grid", "image/png", null);
+                try {
+                    fileBlobStore.get(mbtile);
+                } catch (Exception exception) {
+                    throw Utils.exception(exception, "Error retrieving tile '%s'.", mbtile);
+                }
+            });
             if (i != 0 && i % 10000 == 0) {
                 if (LOGGER.isLoggable(Level.FINE)) {
-                    LOGGER.fine(String.format("Submitted %d read tasks.", i));
+                    LOGGER.fine("Submitted %d read tasks.".formatted(i));
                 }
             }
         }
         if (LOGGER.isLoggable(Level.FINE)) {
-            LOGGER.fine(String.format("Submitted %d read tasks.", TILES));
+            LOGGER.fine("Submitted %d read tasks.".formatted(TILES));
         }
         // lets wait for the workers to finish
         executor.shutdown();
@@ -276,13 +245,11 @@ final class SqlitlePerf {
         // computing some stats
         long endTime = System.currentTimeMillis();
         if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.info(String.format("Tiles file blobstore read time '%d'.", endTime - startTime));
+            LOGGER.info("Tiles file blobstore read time '%d'.".formatted(endTime - startTime));
         }
         if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.info(
-                    String.format(
-                            "Tiles file blobstore reads per second '%f'.",
-                            TILES / (float) (endTime - startTime) * 1000));
+            LOGGER.info("Tiles file blobstore reads per second '%f'."
+                    .formatted(TILES / (float) (endTime - startTime) * 1000));
         }
     }
 
@@ -291,7 +258,7 @@ final class SqlitlePerf {
         // creating the root directory where tiles will be saved
         File seedDirectory = new File(rootDirectory, "tiles");
         if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.info(String.format("Start seeding file system '%s'.", seedDirectory));
+            LOGGER.info("Start seeding file system '%s'.".formatted(seedDirectory));
         }
         BlobStore fileBlobStore = new FileBlobStore(seedDirectory.getPath());
         // start seeding the tiles
@@ -301,23 +268,22 @@ final class SqlitlePerf {
             tiles[i][0] = tile.x;
             tiles[i][1] = tile.y;
             tiles[i][2] = tile.z;
-            fileBlobStore.put(
-                    TileObject.createCompleteTileObject(
-                            "layer",
-                            new long[] {tile.x, tile.y, tile.z},
-                            "epsg:4326",
-                            "image/png",
-                            null,
-                            Utils.byteArrayToResource(tile.data)));
+            fileBlobStore.put(TileObject.createCompleteTileObject(
+                    "layer",
+                    new long[] {tile.x, tile.y, tile.z},
+                    "epsg:4326",
+                    "image/png",
+                    null,
+                    Utils.byteArrayToResource(tile.data)));
             if (i != 0 && i % 10000 == 0) {
                 if (LOGGER.isLoggable(Level.FINE)) {
-                    LOGGER.fine(String.format("Stored %d tiles.", i));
+                    LOGGER.fine("Stored %d tiles.".formatted(i));
                 }
             }
         }
         long endTime = System.currentTimeMillis();
         if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.info(String.format("Insert time '%d' (batch mode).", endTime - startTime));
+            LOGGER.info("Insert time '%d' (batch mode).".formatted(endTime - startTime));
         }
         return seedDirectory;
     }
@@ -327,13 +293,11 @@ final class SqlitlePerf {
         // creating the database that will be seeded
         File seedFile = new File(rootDirectory, "seed_perf_test.sqlite");
         if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.info(String.format("Start seeding file '%s'.", seedFile));
+            LOGGER.info("Start seeding file '%s'.".formatted(seedFile));
         }
-        try (Connection connection =
-                DriverManager.getConnection("jdbc:sqlite:" + seedFile.getPath())) {
-            String createTableSql =
-                    "CREATE TABLE IF NOT EXISTS tiles (zoom_level integer, tile_column integer, "
-                            + "tile_row integer, tile_data blob, CONSTRAINT pk_tiles PRIMARY KEY(zoom_level, tile_column,tile_row));";
+        try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + seedFile.getPath())) {
+            String createTableSql = "CREATE TABLE IF NOT EXISTS tiles (zoom_level integer, tile_column integer, "
+                    + "tile_row integer, tile_data blob, CONSTRAINT pk_tiles PRIMARY KEY(zoom_level, tile_column,tile_row));";
             executeSql(connection, createTableSql);
             // start seeding wrapped in a transaction (improves performance)
             long startTime = System.currentTimeMillis();
@@ -354,13 +318,13 @@ final class SqlitlePerf {
                     if (i != 0 && i % 10000 == 0) {
                         statement.executeBatch();
                         if (LOGGER.isLoggable(Level.FINE)) {
-                            LOGGER.fine(String.format("Inserted batch %d.", i));
+                            LOGGER.fine("Inserted batch %d.".formatted(i));
                         }
                     }
                 }
                 statement.executeBatch();
                 if (LOGGER.isLoggable(Level.FINE)) {
-                    LOGGER.fine(String.format("Inserted batch %d.", TILES));
+                    LOGGER.fine("Inserted batch %d.".formatted(TILES));
                 }
             } catch (Exception exception) {
                 throw Utils.exception(exception, "Error executing SQL '%s'.", sql);
@@ -369,7 +333,7 @@ final class SqlitlePerf {
             executeSql(connection, "END TRANSACTION;");
             long endTime = System.currentTimeMillis();
             if (LOGGER.isLoggable(Level.INFO)) {
-                LOGGER.info(String.format("Insert time '%d' (batch mode).", endTime - startTime));
+                LOGGER.info("Insert time '%d' (batch mode).".formatted(endTime - startTime));
             }
         }
         return seedFile;
@@ -377,13 +341,12 @@ final class SqlitlePerf {
 
     /** Helper method that fetches a tile form the database using the provided connection. */
     private static byte[] getTile(Connection connection, long[] xyz) {
-        String sql =
-                "SELECT tile_data FROM tiles WHERE zoom_level = ? AND tile_column = ? AND tile_row = ?;";
+        String sql = "SELECT tile_data FROM tiles WHERE zoom_level = ? AND tile_column = ? AND tile_row = ?;";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, xyz[2]);
             statement.setLong(2, xyz[0]);
             statement.setLong(3, xyz[1]);
-            try (ResultSet resultSet = statement.executeQuery(); ) {
+            try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
                     // the tile exists
                     byte[] data = resultSet.getBytes(1);
@@ -391,10 +354,7 @@ final class SqlitlePerf {
                         // the data doesn't have the expected size
                         if (LOGGER.isLoggable(Level.SEVERE)) {
                             LOGGER.log(
-                                    Level.SEVERE,
-                                    String.format(
-                                            "Tile %d-%d-%d data is not valid.",
-                                            xyz[2], xyz[0], xyz[1]));
+                                    Level.SEVERE, "Tile %d-%d-%d data is not valid.".formatted(xyz[2], xyz[0], xyz[1]));
                         }
                     }
                     // the tile data looks good
@@ -402,10 +362,7 @@ final class SqlitlePerf {
                 } else {
                     // the tile was not found
                     if (LOGGER.isLoggable(Level.SEVERE)) {
-                        LOGGER.log(
-                                Level.SEVERE,
-                                String.format(
-                                        "Failed to load tile %d-%d-%d.", xyz[2], xyz[0], xyz[1]));
+                        LOGGER.log(Level.SEVERE, "Failed to load tile %d-%d-%d.".formatted(xyz[2], xyz[0], xyz[1]));
                     }
                     return null;
                 }
@@ -445,8 +402,7 @@ final class SqlitlePerf {
         static Tile random() {
             byte[] data = new byte[2024];
             random.nextBytes(data);
-            return new Tile(
-                    random.nextInt(1000000), random.nextInt(1000000), random.nextInt(10), data);
+            return new Tile(random.nextInt(1000000), random.nextInt(1000000), random.nextInt(10), data);
         }
     }
 }

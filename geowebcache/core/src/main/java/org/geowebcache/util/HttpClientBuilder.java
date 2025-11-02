@@ -1,29 +1,31 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Lennart Juette, PTV AG (http://www.ptvag.com) 2010
  */
 package org.geowebcache.util;
 
 import java.net.URL;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.conn.HttpClientConnectionManager;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.cookie.StandardCookieSpec;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.geotools.util.logging.Logging;
 
 /** Builder class for HttpClients */
@@ -36,14 +38,12 @@ public class HttpClientBuilder {
     private AuthScope authscope = null;
 
     private Integer backendTimeoutMillis = null;
-    private static final HttpClientConnectionManager connectionManager =
-            new PoolingHttpClientConnectionManager();
 
     private boolean doAuthentication = false;
 
     private RequestConfig connectionConfig;
 
-    private org.apache.http.impl.client.HttpClientBuilder clientBuilder;
+    private org.apache.hc.client5.http.impl.classic.HttpClientBuilder clientBuilder;
 
     public HttpClientBuilder() {
         super();
@@ -52,36 +52,38 @@ public class HttpClientBuilder {
     /**
      * Instantiates a new http client builder
      *
-     * @param url The server url, or null if no authentication is required or if the client is going
-     *     to be used against a single server only
+     * @param url The server url, or null if no authentication is required or if the client is going to be used against
+     *     a single server only
      */
     public HttpClientBuilder(
-            URL url,
-            Integer backendTimeout,
-            String httpUsername,
-            String httpPassword,
-            URL proxyUrl,
-            int concurrency) {
+            URL url, Integer backendTimeout, String httpUsername, String httpPassword, URL proxyUrl, int concurrency) {
         if (url != null) {
-            this.setHttpCredentials(
-                    httpUsername, httpPassword, new AuthScope(url.getHost(), url.getPort()));
+            this.setHttpCredentials(httpUsername, httpPassword, new AuthScope(url.getHost(), url.getPort()));
         } else {
-            this.setHttpCredentials(httpUsername, httpPassword, AuthScope.ANY);
+            this.setHttpCredentials(httpUsername, httpPassword, new AuthScope(null, -1));
         }
         this.setBackendTimeout(backendTimeout);
-        setConnectionConfig(
-                RequestConfig.custom()
-                        .setCookieSpec(CookieSpecs.DEFAULT)
-                        .setExpectContinueEnabled(true)
-                        .setSocketTimeout(backendTimeoutMillis)
-                        .setConnectTimeout(backendTimeoutMillis)
-                        .setRedirectsEnabled(true)
-                        .build());
+        setConnectionConfig(RequestConfig.custom()
+                .setCookieSpec(StandardCookieSpec.RELAXED)
+                .setExpectContinueEnabled(true)
+                .setResponseTimeout(backendTimeoutMillis, TimeUnit.MILLISECONDS)
+                .setRedirectsEnabled(true)
+                .build());
 
-        clientBuilder = org.apache.http.impl.client.HttpClientBuilder.create();
+        ConnectionConfig connectionConfig = ConnectionConfig.custom()
+                .setConnectTimeout(backendTimeoutMillis, TimeUnit.MILLISECONDS)
+                .build();
+
+        @SuppressWarnings("PMD.CloseResource")
+        PoolingHttpClientConnectionManager connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
+                .setMaxConnTotal(concurrency)
+                .setDefaultConnectionConfig(connectionConfig)
+                .build();
+
+        clientBuilder = HttpClients.custom();
         clientBuilder.useSystemProperties();
+        clientBuilder.setDefaultRequestConfig(this.connectionConfig);
         clientBuilder.setConnectionManager(connectionManager);
-        clientBuilder.setMaxConnTotal(concurrency);
     }
 
     /*
@@ -97,7 +99,7 @@ public class HttpClientBuilder {
     public void setHttpCredentials(String username, String password, AuthScope authscope) {
         if (username != null && authscope != null) {
             this.authscope = authscope;
-            this.httpcredentials = new UsernamePasswordCredentials(username, password);
+            this.httpcredentials = new UsernamePasswordCredentials(username, password.toCharArray());
             this.doAuthentication = true;
         } else {
             this.authscope = null;
@@ -116,22 +118,19 @@ public class HttpClientBuilder {
      *
      * @return the generated HttpClient
      */
-    public HttpClient buildClient() {
+    public CloseableHttpClient buildClient() {
 
         if (authscope != null && httpcredentials != null) {
             BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
             credsProvider.setCredentials(authscope, httpcredentials);
             clientBuilder.setDefaultCredentialsProvider(credsProvider);
         }
-        HttpClient httpClient = clientBuilder.build();
+        CloseableHttpClient httpClient = clientBuilder.build();
 
         return httpClient;
     }
 
-    /**
-     * returns true if this builder was configured to pass HTTP credentials to the generated
-     * HttpClient.
-     */
+    /** returns true if this builder was configured to pass HTTP credentials to the generated HttpClient. */
     public boolean isDoAuthentication() {
         return doAuthentication;
     }

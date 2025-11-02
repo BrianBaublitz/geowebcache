@@ -1,14 +1,13 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * <p>(c) 2016 Open Source Geospatial Foundation - all rights reserved
  */
@@ -18,6 +17,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -129,5 +129,18 @@ public class ImageMimeTest {
                 "Writer for this image should not be the native version.",
                 writer.getClass().getName(),
                 ImageMime.NATIVE_PNG_WRITER_CLASS_NAME);
+    }
+
+    @Test
+    public void testInline() throws Exception {
+        // actual images
+        assertTrue(ImageMime.jpeg.isInlinePreferred());
+        assertTrue(ImageMime.png.isInlinePreferred());
+        assertTrue(ImageMime.png24.isInlinePreferred());
+        assertTrue(ImageMime.png8.isInlinePreferred());
+        assertTrue(ImageMime.jpegPng.isInlinePreferred());
+        assertTrue(ImageMime.gif.isInlinePreferred());
+        // this is a binary dump
+        assertFalse(ImageMime.dds.isInlinePreferred());
     }
 }

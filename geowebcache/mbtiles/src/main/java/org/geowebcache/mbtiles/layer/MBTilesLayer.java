@@ -1,20 +1,20 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * <p>Copyright 2021
  */
 package org.geowebcache.mbtiles.layer;
 
 import com.google.common.annotations.VisibleForTesting;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -26,7 +26,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.geotools.mbtiles.MBTilesFile;
 import org.geotools.mbtiles.MBTilesMetadata;
@@ -61,8 +60,7 @@ public class MBTilesLayer extends AbstractTileLayer implements TileJSONProvider 
 
     private static final String UNZIP_CONTENT_KEY = "gwc.mbtiles.pbf.unzip.debug";
 
-    private static final boolean UNZIP_CONTENT =
-            Boolean.valueOf(System.getProperty(UNZIP_CONTENT_KEY, "true"));
+    private static final boolean UNZIP_CONTENT = Boolean.valueOf(System.getProperty(UNZIP_CONTENT_KEY, "true"));
 
     private static final int TILE_SIZE_256 = 256;
 
@@ -75,7 +73,6 @@ public class MBTilesLayer extends AbstractTileLayer implements TileJSONProvider 
     /*
      * configuration properties
      */
-    private Boolean enabled;
 
     private File tilesPath;
 
@@ -102,16 +99,6 @@ public class MBTilesLayer extends AbstractTileLayer implements TileJSONProvider 
         return null;
     }
 
-    @Override
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    @Override
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
     /** Returns the location of the actual tiles set. */
     public File getTilesPath() {
         return tilesPath;
@@ -134,8 +121,7 @@ public class MBTilesLayer extends AbstractTileLayer implements TileJSONProvider 
     }
 
     /**
-     * @return {@code true} if success. Note this method's return type should be void. It's not
-     *     checked anywhere
+     * @return {@code true} if success. Note this method's return type should be void. It's not checked anywhere
      * @see org.geowebcache.layer.TileLayer#initialize(org.geowebcache.grid.GridSetBroker)
      */
     @Override
@@ -146,12 +132,11 @@ public class MBTilesLayer extends AbstractTileLayer implements TileJSONProvider 
         String specifiedName = getName();
         if (tilesPath != null) {
             if (!tilesPath.exists() || !tilesPath.canRead()) {
-                throw new IllegalStateException(
-                        "tilesPath property for this layer "
-                                + (specifiedName != null ? specifiedName : "")
-                                + " is set to '"
-                                + tilesPath
-                                + "' but the file either does not exist or is not readable");
+                throw new IllegalStateException("tilesPath property for this layer "
+                        + (specifiedName != null ? specifiedName : "")
+                        + " is set to '"
+                        + tilesPath
+                        + "' but the file either does not exist or is not readable");
             }
         }
         try {
@@ -211,8 +196,7 @@ public class MBTilesLayer extends AbstractTileLayer implements TileJSONProvider 
         Integer minZoom = tilesInfo.getMinZoom();
         Integer maxZoom = tilesInfo.getMaxZoom();
 
-        GridSubset subSet =
-                GridSubsetFactory.createGridSubSet(gridSet, this.layerBounds, minZoom, maxZoom);
+        GridSubset subSet = GridSubsetFactory.createGridSubSet(gridSet, this.layerBounds, minZoom, maxZoom);
 
         HashMap<String, GridSubset> subsets = new HashMap<>();
         subsets.put(gridSet.getName(), subSet);
@@ -297,9 +281,8 @@ public class MBTilesLayer extends AbstractTileLayer implements TileJSONProvider 
                 if (backendExpire == -1) {
                     this.expireCacheList.set(0, new ExpirationRule(0, 7200));
                     if (log.isLoggable(Level.FINE)) {
-                        log.fine(
-                                "Layer profile wants MaxAge from backend,"
-                                        + " but backend does not provide this. Setting to 7200 seconds.");
+                        log.fine("Layer profile wants MaxAge from backend,"
+                                + " but backend does not provide this. Setting to 7200 seconds.");
                     }
                 } else {
                     this.expireCacheList.set(backendExpire, new ExpirationRule(0, 7200));
@@ -333,27 +316,19 @@ public class MBTilesLayer extends AbstractTileLayer implements TileJSONProvider 
         }
     }
 
-    /**
-     * @see org.geowebcache.layer.TileLayer#getNoncachedTile(org.geowebcache.conveyor.ConveyorTile)
-     */
+    /** @see org.geowebcache.layer.TileLayer#getNoncachedTile(org.geowebcache.conveyor.ConveyorTile) */
     @Override
     public ConveyorTile getNoncachedTile(ConveyorTile tile) throws GeoWebCacheException {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * @see org.geowebcache.layer.TileLayer#seedTile(org.geowebcache.conveyor.ConveyorTile, boolean)
-     */
+    /** @see org.geowebcache.layer.TileLayer#seedTile(org.geowebcache.conveyor.ConveyorTile, boolean) */
     @Override
-    public void seedTile(ConveyorTile tile, boolean tryCache)
-            throws GeoWebCacheException, IOException {
+    public void seedTile(ConveyorTile tile, boolean tryCache) throws GeoWebCacheException, IOException {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * @see
-     *     org.geowebcache.layer.TileLayer#doNonMetatilingRequest(org.geowebcache.conveyor.ConveyorTile)
-     */
+    /** @see org.geowebcache.layer.TileLayer#doNonMetatilingRequest(org.geowebcache.conveyor.ConveyorTile) */
     @Override
     public ConveyorTile doNonMetatilingRequest(ConveyorTile tile) throws GeoWebCacheException {
         throw new UnsupportedOperationException();
@@ -365,11 +340,7 @@ public class MBTilesLayer extends AbstractTileLayer implements TileJSONProvider 
         return null;
     }
 
-    /**
-     * @see
-     *     org.geowebcache.layer.TileLayer#setExpirationHeader(javax.servlet.http.HttpServletResponse,
-     *     int)
-     */
+    /** @see org.geowebcache.layer.TileLayer#setExpirationHeader(jakarta.servlet.http.HttpServletResponse, int) */
     @Override
     public void setExpirationHeader(HttpServletResponse response, int zoomLevel) {
         /*

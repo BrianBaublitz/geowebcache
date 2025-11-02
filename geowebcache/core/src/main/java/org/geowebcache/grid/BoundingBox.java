@@ -1,19 +1,19 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Chris Whitney, Copyright 2011
  */
 package org.geowebcache.grid;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.text.NumberFormat;
 import java.util.Arrays;
@@ -24,6 +24,7 @@ import org.geotools.util.logging.Logging;
 
 public class BoundingBox implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = -2555598825074884627L;
 
     private NumberFormat getCoordinateFormatter() {
@@ -43,13 +44,11 @@ public class BoundingBox implements Serializable {
 
     public static final BoundingBox WORLD4326 = new BoundingBox(-180.0, -90.0, 180.0, 90.0);
 
-    public static final BoundingBox WORLD3857 =
-            new BoundingBox(-20037508.34, -20037508.34, 20037508.34, 20037508.34);
+    public static final BoundingBox WORLD3857 = new BoundingBox(-20037508.34, -20037508.34, 20037508.34, 20037508.34);
 
     // exactly as defined in the OGC TMS specification
     public static final BoundingBox WORLD3857_TMS =
-            new BoundingBox(
-                    -20037508.3427892, -20037508.3427892, 20037508.3427892, 20037508.3427892);
+            new BoundingBox(-20037508.3427892, -20037508.3427892, 20037508.3427892, 20037508.3427892);
 
     // minx, miny, maxx, maxy
     private double[] coords = new double[4];
@@ -166,14 +165,7 @@ public class BoundingBox implements Serializable {
      * @return a readable string
      */
     public String getReadableString() {
-        return "Min X: "
-                + coords[0]
-                + " Min Y: "
-                + coords[1]
-                + " Max X: "
-                + coords[2]
-                + " Max Y: "
-                + coords[3];
+        return "Min X: " + coords[0] + " Min Y: " + coords[1] + " Max X: " + coords[2] + " Max Y: " + coords[3];
     }
 
     /** Returns a comma separated value String suitable for URL output */
@@ -232,8 +224,7 @@ public class BoundingBox implements Serializable {
      */
     @Override
     public boolean equals(Object obj) {
-        if (obj != null && obj.getClass() == this.getClass()) {
-            BoundingBox other = (BoundingBox) obj;
+        if (obj instanceof BoundingBox other) {
             return this.equals(other, EQUALITYTHRESHOLD);
         }
         return false;
@@ -286,10 +277,12 @@ public class BoundingBox implements Serializable {
                 || other.getMaxY() < getMinY());
     }
 
+    @SuppressWarnings("AmbiguousMethodReference")
     public BoundingBox intersection(BoundingBox bboxB) {
-        return intersection(this, bboxB);
+        return BoundingBox.intersection(this, bboxB);
     }
 
+    @SuppressWarnings("AmbiguousMethodReference")
     public static BoundingBox intersection(BoundingBox bboxA, BoundingBox bboxB) {
         BoundingBox retBbox = new BoundingBox(0, 0, -1, -1);
         if (bboxA.intersects(bboxB)) {

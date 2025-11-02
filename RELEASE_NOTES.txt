@@ -1,15 +1,190 @@
-GeoWebCache 1.26-SNAPSHOT (2024-03-01)
---------------------------------------
+GeoWebCache 2.0-SNAPSHOT (2026-03-01)
+-------------------------------------
 
-<Release Description>
+Initial 2.0 release.
 
 Improvements:
 +++++++++++++
-- <New feature>
+- Migration to JakartaEE for compatibility with Tomcat 11
+
+
+GeoWebCache 1.28.0 (2025-10-01)
+-------------------------------
+
+Initial release, this is the first release requiring a Java 17 enviornment.
+
+Improvements:
++++++++++++++
+- Update to Java 17 minimum, and apply OpenRewrite Improvements to codebase
+- Migrate from JAI to ImageN image processing engine
+- Use GeoTools ImageWorker transition to ImageN operators
+
+
+GeoWebCache 1.28-M0 (2025-09-18)
+--------------------------------
+
+Milestone release, GeoWebCache 1.28-M0 is the first release requiring a Java 17 environment.
+
+Improvements:
++++++++++++++
+- Update to Java 17 minimum, and apply OpenRewrite Improvements to codebase
+- Migrate from JAI to ImageN image processing engine
+- Use GeoTools ImageWorker transition to ImageN operators
+
+Updates:
+++++++++
+
+- Upgrade to GeoTools 34.x
+- Migrate to ImageN 0.4.0
+
+GeoWebCache 1.27.2 (2025-07-17)
+-------------------------------
+
+Stable release
+
+Updates:
+++++++
+- Update to GeoTools 33.2
+- Upgrade postgresql from 42.7.5 to 42.7.6
+- Upgrade commons-io from 2.18.0 to 2.19.0
+- Upgrade jackson from 2.18.2 to 2.19.0
+- Bump org.postgresql:postgresql from 42.7.6 to 42.7.7
+
+
+GeoWebCache 1.27.1 (2025-05-13)
+-------------------------------
+
+Stable release
+
+Improvements:
++++++++++++++
+
+- Mime type: advertise preferred content disposition
 
 Fixes:
 ++++++
-- <Bug fix>
+- Limit number of S3 requests when truncating based on tile range
+- Update to GeoTools 33.1
+
+GeoWebCache 1.27.0 (2025-04-02)
+------------------------------
+
+Stable release
+
+Improvements:
++++++++++++++
+
+- Enhanced vector tiles attribute display with improved formatting
+- Added support for additional OGC API Tiles capabilities
+- Improved tile seeding performance for larger datasets
+- Extended WMTS REST API capabilities
+
+Fixes:
+++++++
+
+- Fixed incorrect handling of SRS codes in tile requests
+- Resolved issue with BlobStore configuration persistence
+- Fixed memory leak in tile cache during high load operations
+- Corrected vector tile boundary handling at high zoom levels
+- Fixed metadata handling for S3-compatible storage backends
+
+Updates:
+++++++++
+
+- Upgraded to GeoTools 33.0
+- Upgraded to Spring Framework 6.0.15
+- Updated Jackson 2 libraries from 2.17.2 to 2.18.0
+- Upgraded to JTS 1.21.0
+- Updated ImageIO-EXT to 1.5.0
+- Upgraded JAI-EXT to 1.2.0
+- Updated Guava from 33.2.1 to 34.0.0
+- Upgraded Azure SDK to 12.30.0
+- Updated Apache Commons libraries to latest versions
+
+Internals:
+++++++++++
+
+- Migrated build system to Java 17 as minimum version
+- Improved test coverage for vector tile capabilities
+- Enhanced CI/CD pipeline with additional automated tests
+- Upgraded JUnit from 4.13.2 to 5.10.0
+- Updated Mockito to 5.14.0
+- Improved JavaDoc documentation
+- Upgraded SLF4J and Logback dependencies
+
+GeoWebCache 1.26.0 (2024-09-18)
+-------------------------------
+
+Stable release
+
+Improvements:
++++++++++++++
+- Show vector tiles attributes on hover
+
+Fixes:
+++++++
+- Fix Azure blobstore error instantiating AzureClient
+- Support numeric grid names in vector tiles preview
+
+Updates:
+++++++++
+- Upgrading to Imageio-EXT 1.4.13
+- Upgrading JAI-EXT 1.1.27
+- Upgrading GeoTools 32.0
+- Upgrade Azure Blobstore fromi legacy azure-sdk (11.0) to latest (12.27.0)
+- Update to JTS 1.20.0 release
+- Upgrade Spring version from 5.3.34 to 5.3.39
+- [GWC-1288] Upgrade guava from 33.2.0 to 33.2.1
+- Update Jackson 2 libs from 2.17.1 to 2.17.2
+- Updating to EasyMock 5.3
+
+Internals:
+++++++++++
+- Upgrade easymock from 5.3.0 to 5.4.0
+- Upgrade mockito from 5.6.0 to 5.12.0
+- Upgrade git-commit-id-plugin to 4.9.0 and set useNativeGit to not fail on git worktrees
+- [GWC-1290] Upgrade commons-codec from 1.17.0 to 1.17.1
+- [GWC-1293] Upgrade junit from 4.12 to 4.13.2
+- Upgrade hamcrest from 1.3 to 3.0
+- Updating PMD to 7.2.0
+
+GeoWebCache 1.25.2 (2024-06-15)
+-------------------------------
+
+Stable release of the 1.25.x series.
+
+Improvements:
++++++++++++++
+- Upgrading to Imageio-EXT 1.4.11
+- [GWC-1266] Upgrade jackson from 2.15.2 to 2.17.1
+- [GWC-1261] Upgrade commons-text from 1.4 to 1.12.0
+- [GWC-1259] Upgrade PostgreSQL driver from 42.7.2 to 42.7.3
+- [GWC-1263] Upgrade commons-codec from 1.10 to 1.17.0
+- Upgrade ImageIO-EXT to 1.4.12
+
+GeoWebCache 1.25.1 (2024-05-22)
+-------------------------------
+
+Stable release of the 1.25.x series.
+
+Improvements:
++++++++++++++
+- Align FileBlobStore with parameter handling practice of S3/Azure
+- Bump guava from 32.0.0 to 33.2.0
+- Bump httpclient from 4.5.13 to 4.5.14
+- Bump commons-collections4 from 4.2 to 4.4
+- Bump commons-io from 2.12.0 to 2.16.1
+- Upgraded GeoTools dependencies to 31.1
+- Updating imageio-ext to 1.4.10
+
+GeoWebCache 1.25.0 (2024-03-19)
+-------------------------------
+
+First stable release of the 1.25.x series
+
+Improvements:
++++++++++++++
+- Upgraded GeoTools dependencies to 31.0
 
 
 GeoWebCache 1.25-RC (2024-03-01)
@@ -33,6 +208,46 @@ Internals:
 - Upgrade spotbugs-maven-plugin:4.7.3.4 -> 4.8.2.0
 - Fix PMD errors in core when run with Java 21
 - Allow building with QA on Java 17 and 21
+
+GeoWebCache 1.24.5 (2024-08-21)
+-------------------------------
+
+Maintenance release of the 1.24.x series
+
+Fixes:
+++++++
+- Fix Azure blobstore error instantiating AzureClient
+
+
+GeoWebCache 1.24.4 (2024-06-16)
+-------------------------------
+
+Maintenance release of the 1.24.x series
+
+Improvements:
++++++++++++++
+- Align FileBlobStore with parameter handling practice of S3/Azure
+- [GWC-1248] Upgrade guava from 32.0.0 to 33.2.0
+- [GWC-1244] Upgrade commons-collections4 from 4.2 to 4.4
+- [GWC-1245] Upgrade httpclient from 4.5.13 to 4.5.14
+- [GWC-1261] Upgrade commons-text from 1.4 to 1.12.0
+- [GWC-1259] Upgrade PostgreSQL driver from 42.7.2 to 42.7.3
+- [GWC-1263] Upgrade commons-codec from 1.10 to 1.17.0
+
+
+GeoWebCache 1.24.3 (2024-04-19)
+-------------------------------
+
+Maintenance release of the 1.24.x series
+
+Improvements:
++++++++++++++
+- Update Spring to version 5.3.32
+- Bump org.postgresql:postgresql from 42.4.3 to 42.7.2
+
+Fixes:
+++++++
+- Avoid infinite number of calls to listBlobs when doing prefix removals (e..g, gridset or layer removals)
 
 GeoWebCache 1.24.2 (2024-01-23)
 -------------------------------
@@ -1183,13 +1398,13 @@ This release comes with a number of bug fixes and improvements (check the full l
 - Added an "enabled" property to the layer configuration XML schema, so that it's possible to keep a layer from being listed in the capabilities document or accessed through any of the provided service interfaces, but still being able of seeding it either through the web or the REST interfaces.
 - New embedded, high performance storage mechanism for Disk Quota statistics based on the Berkeley DB JE no-SQL database engine.
 - Possibility to define a GWC_DISKQUOTA_DISABLED=true environment variable to disable the usage of the disk quota module. Useful for load balanced deployments for the same reasons you need to disable the meta-store. This is a work around until "clustering" is supported for the disk quota storage.
-- Improved DiskQuota documentation <http://geowebcache.org/docs/current/configuration/diskquotas.html>
-- REST API to configure the global disk quota settings <http://geowebcache.org/docs/current/rest/diskquota.html>
+- Improved DiskQuota documentation <https://geowebcache.osgeo.org/docs/current/configuration/diskquotas.html>
+- REST API to configure the global disk quota settings <https://geowebcache.osgeo.org/docs/current/rest/diskquota.html>
 - Implemented a CQL_FILTER parameter extension for the Google Maps service interface
 - Fixed the computation of estimated and remaining seeding time and number of tiles to process reported by the web interface
 - Improved the stability of the system by avoiding the unnecessary load of existing tiles into memory when re-seeding
 - Seeding and truncating with parameter filters (i.e. for multiple styles or other WMS parameters)
-- Failure tolerance control for seeding:  <http://geowebcache.org/docs/current/production/index.html#seeding-and-truncating-the-cache>
+- Failure tolerance control for seeding:  <https://geowebcache.osgeo.org/docs/current/production/index.html#seeding-and-truncating-the-cache>
 
 
 GeoWebCache 1.2.4 (2011-01-24)
@@ -1210,4 +1425,4 @@ In this release, besides numerous bug fixes, you'll find three new exciting feat
 
 
 [1] <https://github.com/GeoWebCache/geowebcache>
-[2] <http://geowebcache.org/docs/current>
+[2] <https://geowebcache.osgeo.org/docs/current>

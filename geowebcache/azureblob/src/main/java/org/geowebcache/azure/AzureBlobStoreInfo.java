@@ -1,14 +1,13 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Andrea Aime, GeoSolutions, Copyright 2019
  */
@@ -17,6 +16,7 @@ package org.geowebcache.azure;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import java.io.Serial;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
@@ -31,12 +31,12 @@ import org.geowebcache.storage.StorageException;
 
 /** Plain old java object representing the configuration for an Azure blob store. */
 public class AzureBlobStoreInfo extends BlobStoreInfo {
+    @Serial
     private static final long serialVersionUID = -8068069256598987874L;
 
     /**
-     * Max number of connections used inside the Netty HTTP client. Might seem a lot, but when
-     * deleting we have to issue a delete on each single tile, so we need a large parallelism to
-     * make that feasible
+     * Max number of connections used inside the Netty HTTP client. Might seem a lot, but when deleting we have to issue
+     * a delete on each single tile, so we need a large parallelism to make that feasible
      */
     public static final int DEFAULT_CONNECTIONS = 100;
 
@@ -52,7 +52,7 @@ public class AzureBlobStoreInfo extends BlobStoreInfo {
 
     private String maxConnections;
 
-    private Boolean useHTTPS = true;
+    private boolean useHTTPS = true;
 
     private String proxyHost;
 
@@ -107,8 +107,7 @@ public class AzureBlobStoreInfo extends BlobStoreInfo {
     }
 
     /**
-     * Returns the base prefix, which is a prefix path to use as the root to store tiles under the
-     * container.
+     * Returns the base prefix, which is a prefix path to use as the root to store tiles under the container.
      *
      * @return optional string for a "base prefix"
      */
@@ -131,15 +130,13 @@ public class AzureBlobStoreInfo extends BlobStoreInfo {
         this.maxConnections = maxConnections;
     }
 
-    /**
-     * @return whether to use HTTPS (true) or HTTP (false) when talking to Azure (defaults to true)
-     */
+    /** @return whether to use HTTPS (true) or HTTP (false) when talking to Azure (defaults to true) */
     public Boolean isUseHTTPS() {
         return useHTTPS;
     }
 
     /** @param useHTTPS whether to use HTTPS (true) or HTTP (false) when talking to Azure */
-    public void setUseHTTPS(Boolean useHTTPS) {
+    public void setUseHTTPS(boolean useHTTPS) {
         this.useHTTPS = useHTTPS;
     }
 
@@ -183,8 +180,7 @@ public class AzureBlobStoreInfo extends BlobStoreInfo {
     /**
      * Returns the optional proxy user name to use if connecting through a proxy.
      *
-     * @return The optional proxy user name the configured client will use if connecting through a
-     *     proxy.
+     * @return The optional proxy user name the configured client will use if connecting through a proxy.
      */
     @Nullable
     public String getProxyUsername() {
@@ -220,18 +216,13 @@ public class AzureBlobStoreInfo extends BlobStoreInfo {
     }
 
     @Override
-    public BlobStore createInstance(TileLayerDispatcher layers, LockProvider lockProvider)
-            throws StorageException {
+    public BlobStore createInstance(TileLayerDispatcher layers, LockProvider lockProvider) throws StorageException {
         checkNotNull(layers);
         checkState(getName() != null);
-        checkState(
-                isEnabled(),
-                "Can't call AzureBlobStoreConfig.createInstance() is blob store is not enabled");
-        if (log.isLoggable(Level.FINE))
-            log.fine("Creating Azure Blob Store instance [name=" + getName() + "]");
+        checkState(isEnabled(), "Can't call AzureBlobStoreConfig.createInstance() is blob store is not enabled");
+        if (log.isLoggable(Level.FINE)) log.fine("Creating Azure Blob Store instance [name=" + getName() + "]");
         final AzureBlobStoreData storeData =
-                new AzureBlobStoreData(
-                        this, GeoWebCacheExtensions.bean(GeoWebCacheEnvironment.class));
+                new AzureBlobStoreData(this, GeoWebCacheExtensions.bean(GeoWebCacheEnvironment.class));
         return new AzureBlobStore(storeData, layers, lockProvider);
     }
 
@@ -240,9 +231,9 @@ public class AzureBlobStoreInfo extends BlobStoreInfo {
         String container = this.getContainer();
         String prefix = this.getPrefix();
         if (prefix == null) {
-            return String.format("container: %s", container);
+            return "container: %s".formatted(container);
         } else {
-            return String.format("container: %s prefix: %s", container, prefix);
+            return "container: %s prefix: %s".formatted(container, prefix);
         }
     }
 
@@ -260,7 +251,7 @@ public class AzureBlobStoreInfo extends BlobStoreInfo {
         result = prime * result + ((proxyPort == null) ? 0 : proxyPort.hashCode());
         result = prime * result + ((proxyUsername == null) ? 0 : proxyUsername.hashCode());
         result = prime * result + ((serviceURL == null) ? 0 : serviceURL.hashCode());
-        result = prime * result + ((useHTTPS == null) ? 0 : useHTTPS.hashCode());
+        result = prime * result + (useHTTPS ? 1 : 0);
         return result;
     }
 
@@ -300,9 +291,7 @@ public class AzureBlobStoreInfo extends BlobStoreInfo {
         if (serviceURL == null) {
             if (other.serviceURL != null) return false;
         } else if (!serviceURL.equals(other.serviceURL)) return false;
-        if (useHTTPS == null) {
-            if (other.useHTTPS != null) return false;
-        } else if (!useHTTPS.equals(other.useHTTPS)) return false;
+        if (useHTTPS != other.useHTTPS) return false;
         return true;
     }
 

@@ -1,26 +1,25 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Arne Kepp, The Open Planning Project, Copyright 2008
  */
 package org.geowebcache.proxy;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.logging.Logger;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.geotools.util.logging.Logging;
 import org.geowebcache.util.URLs;
 import org.springframework.web.servlet.ModelAndView;
@@ -32,8 +31,8 @@ public class ProxyDispatcher extends AbstractController {
     private static long lastRequest = System.currentTimeMillis();
 
     @Override
-    protected ModelAndView handleRequestInternal(
-            HttpServletRequest request, HttpServletResponse response) throws Exception {
+    protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response)
+            throws Exception {
 
         String methStr = request.getMethod();
         if (!methStr.equalsIgnoreCase("POST")) {

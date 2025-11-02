@@ -1,43 +1,39 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * <p>Copyright 2018
  */
 package org.geowebcache.config;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 public class ListenerCollectionTest {
-
-    @Rule public ExpectedException exception = ExpectedException.none();
 
     @Test
     public void testEmpty() throws Exception {
         ListenerCollection<Runnable> collection = new ListenerCollection<>();
 
-        collection.safeForEach(
-                (x) -> {
-                    fail("should not be called");
-                });
+        collection.safeForEach((x) -> {
+            fail("should not be called");
+        });
     }
 
     @Test
@@ -117,13 +113,10 @@ public class ListenerCollectionTest {
 
         control.replay();
 
-        try {
-            collection.add(l1);
-            exception.expect(sameInstance(e1));
-            collection.safeForEach(Runnable::run);
-        } finally {
-            control.verify();
-        }
+        collection.add(l1);
+        Exception exception = assertThrows(Exception.class, () -> collection.safeForEach(Runnable::run));
+        assertThat(exception, sameInstance(e1));
+        control.verify();
     }
 
     @Test
@@ -143,17 +136,13 @@ public class ListenerCollectionTest {
 
         control.replay();
 
-        try {
-            collection.add(l1);
-            collection.add(l2);
-            exception.expect(sameInstance(e1));
-            collection.safeForEach(Runnable::run);
-        } finally {
-            control.verify();
-        }
+        collection.add(l1);
+        collection.add(l2);
+        Exception exception = assertThrows(Exception.class, () -> collection.safeForEach(Runnable::run));
+        assertThat(exception, sameInstance(e1));
+        control.verify();
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void testSuppressedExceptionsRecorded() throws Exception {
         ListenerCollection<Runnable> collection = new ListenerCollection<>();
@@ -172,15 +161,10 @@ public class ListenerCollectionTest {
 
         control.replay();
 
-        try {
-            collection.add(l1);
-            collection.add(l2);
-            exception.expect(
-                    both(sameInstance(e2))
-                            .and(hasProperty("suppressed", arrayContaining(sameInstance(e1)))));
-            collection.safeForEach(Runnable::run);
-        } finally {
-            control.verify();
-        }
+        collection.add(l1);
+        collection.add(l2);
+        Exception exception = assertThrows(Exception.class, () -> collection.safeForEach(Runnable::run));
+        assertThat(exception, both(sameInstance(e2)).and(hasProperty("suppressed", arrayContaining(sameInstance(e1)))));
+        control.verify();
     }
 }

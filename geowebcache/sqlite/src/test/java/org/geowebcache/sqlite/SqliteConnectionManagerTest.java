@@ -1,14 +1,13 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Nuno Oliveira, GeoSolutions S.A.S., Copyright 2016
  */
@@ -16,11 +15,12 @@ package org.geowebcache.sqlite;
 
 import static org.geowebcache.sqlite.Utils.Tuple;
 import static org.geowebcache.sqlite.Utils.Tuple.tuple;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
 
+import com.google.errorprone.annotations.FormatMethod;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -71,26 +71,19 @@ public final class SqliteConnectionManagerTest extends TestSupport {
 
     @Test
     public void testGetConnection() throws StorageException {
-        SqliteConnectionManager connectionManager =
-                new SqliteConnectionManager(Integer.MAX_VALUE, 1000);
+        SqliteConnectionManager connectionManager = new SqliteConnectionManager(Integer.MAX_VALUE, 1000);
         connectionManagersToClean.add(connectionManager);
-        connectionManager.doWork(
-                buildRootFile("tiles", "data_base.sqlite"),
-                true,
-                connection -> {
-                    insertInTestTable(connection, "name", "europe");
-                });
+        connectionManager.doWork(buildRootFile("tiles", "data_base.sqlite"), true, connection -> {
+            insertInTestTable(connection, "name", "europe");
+        });
         connectionManager.reapAllConnections();
         assertThat(connectionManager.getPool().size(), is(0));
-        connectionManager.doWork(
-                buildRootFile("tiles", "data_base.sqlite"),
-                true,
-                connection -> {
-                    String value = getFromTestTable(connection, "name");
-                    assertThat(value, notNullValue());
-                    assertThat(value, is("europe"));
-                    closeConnectionQuietly(connection);
-                });
+        connectionManager.doWork(buildRootFile("tiles", "data_base.sqlite"), true, connection -> {
+            String value = getFromTestTable(connection, "name");
+            assertThat(value, notNullValue());
+            assertThat(value, is("europe"));
+            closeConnectionQuietly(connection);
+        });
     }
 
     @Test
@@ -130,58 +123,46 @@ public final class SqliteConnectionManagerTest extends TestSupport {
     @Test
     @Ignore
     public void testReplaceOperation() throws Exception {
-        SqliteConnectionManager connectionManager =
-                new SqliteConnectionManager(Integer.MAX_VALUE, 1000);
+        SqliteConnectionManager connectionManager = new SqliteConnectionManager(Integer.MAX_VALUE, 1000);
         connectionManagersToClean.add(connectionManager);
         File file1 = buildRootFile("tiles", "data_base_1.sqlite");
         Utils.createFileParents(file1);
         File file2 = buildRootFile("tiles", "data_base_2.sqlite");
         Utils.createFileParents(file2);
-        connectionManager.doWork(
-                file1,
-                false,
-                connection -> {
-                    insertInTestTable(connection, "name", "europe");
-                    closeConnectionQuietly(connection);
-                });
+        connectionManager.doWork(file1, false, connection -> {
+            insertInTestTable(connection, "name", "europe");
+            closeConnectionQuietly(connection);
+        });
         file2.createNewFile();
         connectionManager.replace(file1, file2);
-        connectionManager.doWork(
-                file1,
-                false,
-                connection -> {
-                    createTestTable(connection);
-                    String value = getFromTestTable(connection, "name");
-                    assertThat(value, nullValue());
-                    closeConnectionQuietly(connection);
-                });
+        connectionManager.doWork(file1, false, connection -> {
+            createTestTable(connection);
+            String value = getFromTestTable(connection, "name");
+            assertThat(value, nullValue());
+            closeConnectionQuietly(connection);
+        });
     }
 
-    private void genericMultiThreadsTest(
-            int threadsNumber, int workersNumber, long poolSize, File... files) throws Exception {
+    private void genericMultiThreadsTest(int threadsNumber, int workersNumber, long poolSize, File... files)
+            throws Exception {
         SqliteConnectionManager connectionManager = new SqliteConnectionManager(poolSize, 10);
         connectionManagersToClean.add(connectionManager);
-        @SuppressWarnings("PMD.CloseResource") // implements AutoCloseable in Java 21
         ExecutorService executor = Executors.newFixedThreadPool(threadsNumber);
         Random random = new Random();
         List<Future<Tuple<File, String>>> results = new ArrayList<>();
         for (int i = 0; i < workersNumber; i++) {
             if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.fine(String.format("Submitted worker '%d'\\'%d'.", i, workersNumber));
+                LOGGER.fine("Submitted worker '%d'\\'%d'.".formatted(i, workersNumber));
             }
-            executor.submit(
-                    () -> {
-                        File file = files[random.nextInt(files.length)];
-                        String key = UUID.randomUUID().toString();
-                        return connectionManager.doWork(
-                                file,
-                                false,
-                                connection -> {
-                                    insertInTestTable(connection, key, "value-" + key);
-                                    closeConnectionQuietly(connection);
-                                    return tuple(file, key);
-                                });
-                    });
+            executor.submit(() -> {
+                File file = files[random.nextInt(files.length)];
+                String key = UUID.randomUUID().toString();
+                return connectionManager.doWork(file, false, connection -> {
+                    insertInTestTable(connection, key, "value-" + key);
+                    closeConnectionQuietly(connection);
+                    return tuple(file, key);
+                });
+            });
         }
         executor.shutdown();
         executor.awaitTermination(60, TimeUnit.SECONDS);
@@ -190,15 +171,12 @@ public final class SqliteConnectionManagerTest extends TestSupport {
         for (Future<Tuple<File, String>> result : results) {
             File file = result.get().first;
             String key = result.get().second;
-            connectionManager.doWork(
-                    file,
-                    true,
-                    connection -> {
-                        String value = getFromTestTable(connection, key);
-                        assertThat(value, notNullValue());
-                        assertThat(value, is("value-" + key));
-                        closeConnectionQuietly(connection);
-                    });
+            connectionManager.doWork(file, true, connection -> {
+                String value = getFromTestTable(connection, key);
+                assertThat(value, notNullValue());
+                assertThat(value, is("value-" + key));
+                closeConnectionQuietly(connection);
+            });
         }
     }
 
@@ -223,8 +201,7 @@ public final class SqliteConnectionManagerTest extends TestSupport {
     }
 
     private static String getFromTestTable(Connection connection, String key) {
-        return new ExecuteQuery(
-                connection, "SELECT value FROM test WHERE key = '%s' ORDER BY key;", key) {
+        return new ExecuteQuery(connection, "SELECT value FROM test WHERE key = '%s' ORDER BY key;", key) {
 
             String result;
 
@@ -237,8 +214,9 @@ public final class SqliteConnectionManagerTest extends TestSupport {
         }.result;
     }
 
+    @FormatMethod
     private static void execute(Connection connection, String sql, Object... arguments) {
-        String finalSql = String.format(sql, arguments);
+        String finalSql = sql.formatted(arguments);
         try (PreparedStatement statement = connection.prepareStatement(finalSql)) {
             statement.execute();
         } catch (Exception exception) {
@@ -250,8 +228,9 @@ public final class SqliteConnectionManagerTest extends TestSupport {
 
         public abstract void extract(ResultSet resultSet) throws Exception;
 
+        @FormatMethod
         public ExecuteQuery(Connection connection, String query, Object... arguments) {
-            String finalQuery = String.format(query, arguments);
+            String finalQuery = query.formatted(arguments);
             try (PreparedStatement statement = connection.prepareStatement(finalQuery)) {
                 extract(statement.executeQuery());
             } catch (Exception exception) {

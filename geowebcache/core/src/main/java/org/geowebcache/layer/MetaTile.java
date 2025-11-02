@@ -1,20 +1,18 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Arne Kepp, The Open Planning Project, Copyright 2008
  */
 package org.geowebcache.layer;
 
-import it.geosolutions.jaiext.BufferedImageAdapter;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
@@ -35,10 +33,11 @@ import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import javax.imageio.stream.MemoryCacheImageOutputStream;
-import javax.media.jai.JAI;
-import javax.media.jai.PlanarImage;
-import javax.media.jai.RenderedOp;
-import javax.media.jai.operator.CropDescriptor;
+import org.eclipse.imagen.ImageN;
+import org.eclipse.imagen.PlanarImage;
+import org.eclipse.imagen.RenderedOp;
+import org.eclipse.imagen.media.BufferedImageAdapter;
+import org.eclipse.imagen.media.crop.CropDescriptor;
 import org.geotools.util.logging.Logging;
 import org.geowebcache.GeoWebCacheException;
 import org.geowebcache.grid.BoundingBox;
@@ -55,7 +54,7 @@ public class MetaTile implements TileResponseReceiver {
 
     private static Logger log = Logging.getLogger(MetaTile.class.getName());
 
-    protected static final RenderingHints NO_CACHE = new RenderingHints(JAI.KEY_TILE_CACHE, null);
+    protected static final RenderingHints NO_CACHE = new RenderingHints(ImageN.KEY_TILE_CACHE, null);
 
     private static final boolean NATIVE_JAI_AVAILABLE;
 
@@ -71,7 +70,7 @@ public class MetaTile implements TileResponseReceiver {
         }
         NATIVE_JAI_AVAILABLE = nativeJAIAvailable;
         if (!NATIVE_JAI_AVAILABLE) {
-            log.config("Native JAI is not installed");
+            log.config("Native ImageN is not installed");
         }
     }
 
@@ -121,9 +120,8 @@ public class MetaTile implements TileResponseReceiver {
     /**
      * The the request format is the format used for the request to the backend.
      *
-     * <p>The response format is what the tiles are actually saved as. The primary example is to use
-     * image/png or image/tiff for backend requests, and then save the resulting tiles to JPEG to
-     * avoid loss of quality.
+     * <p>The response format is what the tiles are actually saved as. The primary example is to use image/png or
+     * image/tiff for backend requests, and then save the resulting tiles to JPEG to avoid loss of quality.
      */
     public MetaTile(
             GridSubset gridSubset,
@@ -140,9 +138,7 @@ public class MetaTile implements TileResponseReceiver {
         this.metaY = metaY;
         this.gutterConfig = responseFormat.isVector() || gutter == null ? 0 : gutter.intValue();
 
-        metaGridCov =
-                calculateMetaTileGridBounds(
-                        gridSubset.getCoverage((int) tileGridPosition[2]), tileGridPosition);
+        metaGridCov = calculateMetaTileGridBounds(gridSubset.getCoverage((int) tileGridPosition[2]), tileGridPosition);
         tilesGridPositions = calculateTilesGridPositions();
         calculateEdgeGutter();
         int tileHeight = gridSubset.getTileHeight();
@@ -155,8 +151,8 @@ public class MetaTile implements TileResponseReceiver {
      *
      * <p>Adding a gutter should be really easy, just add to all sides, right ?
      *
-     * <p>But GeoServer / GeoTools, and possibly other WMS servers, can get mad if we exceed 180,90
-     * (or the equivalent for other projections), so we'lll treat those with special care.
+     * <p>But GeoServer / GeoTools, and possibly other WMS servers, can get mad if we exceed 180,90 (or the equivalent
+     * for other projections), so we'lll treat those with special care.
      */
     protected void calculateEdgeGutter() {
 
@@ -259,21 +255,15 @@ public class MetaTile implements TileResponseReceiver {
         try {
             // ImageIO.read closes the stream, and the stream throws exception on second close call
             @SuppressWarnings("PMD.CloseResource")
-            ImageInputStream imgStream =
-                    new ResourceImageInputStream(((ByteArrayResource) buffer).getInputStream());
+            ImageInputStream imgStream = new ResourceImageInputStream(((ByteArrayResource) buffer).getInputStream());
             RenderedImage metaTiledImage = ImageIO.read(imgStream); // read closes the stream for us
             setImage(metaTiledImage);
         } catch (IOException ioe) {
             throw new GeoWebCacheException(
-                    "WMSMetaTile.setImageBytes() "
-                            + "failed on ImageIO.read(byte["
-                            + buffer.getSize()
-                            + "])",
-                    ioe);
+                    "WMSMetaTile.setImageBytes() " + "failed on ImageIO.read(byte[" + buffer.getSize() + "])", ioe);
         }
         if (metaTileImage == null) {
-            throw new GeoWebCacheException(
-                    "ImageIO.read(InputStream) returned null. Unable to read image.");
+            throw new GeoWebCacheException("ImageIO.read(InputStream) returned null. Unable to read image.");
         }
     }
 
@@ -282,8 +272,8 @@ public class MetaTile implements TileResponseReceiver {
     }
 
     /**
-     * Cuts the metaTile into the specified number of tiles, the actual number of tiles is
-     * determined by metaX and metaY, not the width and height provided here.
+     * Cuts the metaTile into the specified number of tiles, the actual number of tiles is determined by metaX and
+     * metaY, not the width and height provided here.
      *
      * @param tileWidth width of each tile
      * @param tileHeight height of each tile
@@ -313,26 +303,26 @@ public class MetaTile implements TileResponseReceiver {
      * @param tileHeight height of the tile
      * @return a rendered image of the specified meta tile region
      */
-    public RenderedImage createTile(
-            final int minX, final int minY, final int tileWidth, final int tileHeight) {
+    public RenderedImage createTile(final int minX, final int minY, final int tileWidth, final int tileHeight) {
 
         // optimize if we get a bufferedimage
-        if (metaTileImage instanceof BufferedImage) {
-            BufferedImage subimage =
-                    ((BufferedImage) metaTileImage).getSubimage(minX, minY, tileWidth, tileHeight);
+        if (metaTileImage instanceof BufferedImage image) {
+            BufferedImage subimage = image.getSubimage(minX, minY, tileWidth, tileHeight);
             return new BufferedImageAdapter(subimage);
         }
 
         // do a crop, and then turn it into a buffered image so that we can release
         // the image chain
-        PlanarImage cropped =
-                CropDescriptor.create(
-                        metaTileImage,
-                        Float.valueOf(minX),
-                        Float.valueOf(minY),
-                        Float.valueOf(tileWidth),
-                        Float.valueOf(tileHeight),
-                        NO_CACHE);
+        PlanarImage cropped = CropDescriptor.create(
+                metaTileImage,
+                Float.valueOf(minX),
+                Float.valueOf(minY),
+                Float.valueOf(tileWidth),
+                Float.valueOf(tileHeight),
+                null,
+                null,
+                null,
+                NO_CACHE);
         if (nativeAccelAvailable()) {
             log.finer("created cropped tile");
             return cropped;
@@ -364,8 +354,7 @@ public class MetaTile implements TileResponseReceiver {
         }
 
         Rectangle tileRegion = tiles[tileIdx];
-        RenderedImage tile =
-                createTile(tileRegion.x, tileRegion.y, tileRegion.width, tileRegion.height);
+        RenderedImage tile = createTile(tileRegion.x, tileRegion.y, tileRegion.width, tileRegion.height);
         disposeLater(tile);
 
         // TODO should we recycle the writers ?
@@ -379,7 +368,7 @@ public class MetaTile implements TileResponseReceiver {
             param = formatModifier.adjustImageWriteParam(param);
         }
         try (OutputStream outputStream = target.getOutputStream();
-                ImageOutputStream imgOut = new MemoryCacheImageOutputStream(outputStream); ) {
+                ImageOutputStream imgOut = new MemoryCacheImageOutputStream(outputStream)) {
             writer.setOutput(imgOut);
             IIOImage image = new IIOImage(tile, null, null);
             writer.write(null, image, param);
@@ -398,17 +387,12 @@ public class MetaTile implements TileResponseReceiver {
     }
 
     public String debugString() {
-        return " metaX: "
-                + metaX
-                + " metaY: "
-                + metaY
-                + " metaGridCov: "
-                + Arrays.toString(metaGridCov);
+        return " metaX: " + metaX + " metaY: " + metaY + " metaGridCov: " + Arrays.toString(metaGridCov);
     }
 
     /**
-     * Figures out the bounds of the metatile, in terms of the gridposition of all contained tiles.
-     * To get the BBOX you need to add one tilewidth to the top and right.
+     * Figures out the bounds of the metatile, in terms of the gridposition of all contained tiles. To get the BBOX you
+     * need to add one tilewidth to the top and right.
      *
      * <p>It also updates metaX and metaY to the actual metatiling factors
      */
@@ -478,10 +462,7 @@ public class MetaTile implements TileResponseReceiver {
         }
     }
 
-    /**
-     * Should be called as soon as the meta tile is no longer needed in order to dispose any held
-     * resource
-     */
+    /** Should be called as soon as the meta tile is no longer needed in order to dispose any held resource */
     public void dispose() {
         if (metaTileImage == null) {
             return;
@@ -492,35 +473,36 @@ public class MetaTile implements TileResponseReceiver {
         if (log.isLoggable(Level.FINER)) {
             log.finer("disposing metatile " + image);
         }
-        if (image instanceof BufferedImage) {
-            ((BufferedImage) image).flush();
-        } else if (image instanceof PlanarImage) {
-            disposePlanarImageChain((PlanarImage) image, new HashSet<>());
+        if (image instanceof BufferedImage bufferedImage) {
+            bufferedImage.flush();
+        } else if (image instanceof PlanarImage planarImage) {
+            disposePlanarImageChain(planarImage, new HashSet<>());
         }
         if (disposableImages != null) {
             for (RenderedImage tile : disposableImages) {
                 if (log.isLoggable(Level.FINER)) {
                     log.finer("disposing tile " + tile);
                 }
-                if (tile instanceof BufferedImage) {
-                    ((BufferedImage) tile).flush();
-                } else if (tile instanceof PlanarImage) {
-                    disposePlanarImageChain((PlanarImage) tile, new HashSet<>());
+                if (tile instanceof BufferedImage bufferedImage) {
+                    bufferedImage.flush();
+                } else if (tile instanceof PlanarImage planarImage) {
+                    disposePlanarImageChain(planarImage, new HashSet<>());
                 }
             }
         }
         disposableImages = null;
     }
 
+    @SuppressWarnings("PMD.CloseResource")
     protected static void disposePlanarImageChain(PlanarImage pi, HashSet<PlanarImage> visited) {
         List sinks = pi.getSinks();
         // check all the sinks (the image might be in the middle of a chain)
         if (sinks != null) {
             for (Object sink : sinks) {
-                if (sink instanceof PlanarImage && !visited.contains(sink)) {
-                    disposePlanarImageChain((PlanarImage) sink, visited);
-                } else if (sink instanceof BufferedImage) {
-                    ((BufferedImage) sink).flush();
+                if (sink instanceof PlanarImage image1 && !visited.contains(sink)) {
+                    disposePlanarImageChain(image1, visited);
+                } else if (sink instanceof BufferedImage image) {
+                    image.flush();
                 }
             }
         }
@@ -532,28 +514,24 @@ public class MetaTile implements TileResponseReceiver {
         List sources = pi.getSources();
         if (sources != null) {
             for (Object child : sources) {
-                if (child instanceof PlanarImage && !visited.contains(child)) {
-                    disposePlanarImageChain((PlanarImage) child, visited);
-                } else if (child instanceof BufferedImage) {
-                    ((BufferedImage) child).flush();
+                if (child instanceof PlanarImage image1 && !visited.contains(child)) {
+                    disposePlanarImageChain(image1, visited);
+                } else if (child instanceof BufferedImage image) {
+                    image.flush();
                 }
             }
         }
 
         // ImageRead might also hold onto a image input stream that we have to close
-        if (pi instanceof RenderedOp) {
-            RenderedOp op = (RenderedOp) pi;
+        if (pi instanceof RenderedOp op) {
             for (Object param : op.getParameterBlock().getParameters()) {
-                if (param instanceof ImageInputStream) {
-                    @SuppressWarnings("PMD.CloseResource") // doing the closing here...
-                    ImageInputStream iis = (ImageInputStream) param;
+                if (param instanceof ImageInputStream iis) {
                     try {
                         iis.close();
                     } catch (IOException e) {
                         // fine, we tried
                     }
-                } else if (param instanceof ImageReader) {
-                    ImageReader reader = (ImageReader) param;
+                } else if (param instanceof ImageReader reader) {
                     reader.dispose();
                 }
             }

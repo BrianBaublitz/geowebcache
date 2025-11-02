@@ -1,14 +1,13 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Andrea Aime - GeoSolutions Copyright 2012
  */
@@ -21,8 +20,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serial;
 import java.io.Serializable;
+import java.util.logging.Logger;
 import org.apache.commons.lang3.SerializationUtils;
+import org.geotools.util.logging.Logging;
 import org.geowebcache.GeoWebCacheEnvironment;
 import org.geowebcache.GeoWebCacheExtensions;
 import org.geowebcache.config.ConfigurationException;
@@ -34,6 +36,7 @@ import org.geowebcache.io.GeoWebCacheXStream;
  * @author Andrea Aime - GeoSolutions
  */
 public class JDBCConfiguration implements Serializable {
+    private static final Logger LOG = Logging.getLogger(JDBCConfiguration.class.getName());
 
     String dialect;
 
@@ -45,8 +48,8 @@ public class JDBCConfiguration implements Serializable {
     ConnectionPoolConfiguration connectionPool;
 
     /**
-     * Loads a XML configuration from the specified file. The file must adhere to the {@code
-     * geowebcache-diskquota-jdbc.xsd} schema.
+     * Loads a XML configuration from the specified file. The file must adhere to the
+     * {@code geowebcache-diskquota-jdbc.xsd} schema.
      */
     public static JDBCConfiguration load(File sourceFile) throws ConfigurationException {
 
@@ -59,8 +62,8 @@ public class JDBCConfiguration implements Serializable {
     }
 
     /**
-     * Loads a XML configuration from the specified file. The file must adhere to the {@code
-     * geowebcache-diskquota-jdbc.xsd} schema.
+     * Loads a XML configuration from the specified file. The file must adhere to the
+     * {@code geowebcache-diskquota-jdbc.xsd} schema.
      *
      * @param is InputStream to load the configuration from
      */
@@ -73,20 +76,29 @@ public class JDBCConfiguration implements Serializable {
         return conf;
     }
 
-    private static void validateConfiguration(JDBCConfiguration conf)
-            throws ConfigurationException {
+    /**
+     * Validate configuration, producing a configuration exception for common problems.
+     *
+     * <p>This method is used to validate {@link JDBCConfiguration#load(InputStream)} and is available to validate user
+     * input. Errors for required parameters result in an exception, while warnings are logged.
+     *
+     * <p>Checks required JDBC driver and jdbc URL parameters are present.
+     *
+     * <p>Checks H2 and Oracle validation query if provided.
+     *
+     * @param conf configuration
+     * @throws ConfigurationException for incomplete or inconsistent configuration.
+     */
+    public static void validateConfiguration(JDBCConfiguration conf) throws ConfigurationException {
         if (conf.getDialect() == null) {
             throw new ConfigurationException(
                     "A dialect must be provided, possible values are H2, HSQL, Oracle, PostgresSQL");
         }
 
         ConnectionPoolConfiguration cp = conf.getConnectionPool();
-        if (conf.getJNDISource() == null
-                && cp == null
-                && !"H2".equals(conf.getDialect())
-                && !"HSQL".equals(conf.getDialect())) {
-            throw new ConfigurationException(
-                    "No data source provided, either configure JNDISource or connectionPool");
+        String dialect = conf.getDialect();
+        if (conf.getJNDISource() == null && cp == null && !"H2".equals(dialect) && !"HSQL".equals(dialect)) {
+            throw new ConfigurationException("No data source provided, either configure JNDISource or connectionPool");
         }
 
         if (cp != null) {
@@ -95,6 +107,26 @@ public class JDBCConfiguration implements Serializable {
             }
             if (cp.getUrl() == null) {
                 throw new ConfigurationException("No JDBC URL provided");
+            }
+
+            String vq = cp.getValidationQuery();
+            if (vq != null) {
+                if ("H2".equalsIgnoreCase(dialect)) {
+                    if (!vq.equalsIgnoreCase("SELECT 1")) {
+                        throw new ConfigurationException("H2 validation query required to be: SELECT 1");
+                    }
+                } else if ("Oracle".equalsIgnoreCase(dialect)) {
+                    if (!vq.equalsIgnoreCase("SELECT 1 FROM DUAL")) {
+                        throw new ConfigurationException("Oracle validation query required to be: SELECT 1 FROM DUAL");
+                    }
+                } else {
+                    if (!vq.equalsIgnoreCase("SELECT 1") && !vq.equalsIgnoreCase("SELECT 1 FROM DUAL")) {
+                        LOG.config(dialect
+                                + " non standard validation query '"
+                                + vq
+                                + "', recommended either 'SELECT 1' or 'SELECT 1 FROM DUAL'.");
+                    }
+                }
             }
         }
     }
@@ -108,8 +140,7 @@ public class JDBCConfiguration implements Serializable {
         try (FileOutputStream fos = new FileOutputStream(file)) {
             store(config, fos);
         } catch (IOException e) {
-            throw new ConfigurationException(
-                    "Failed to store the configuration into " + file.getAbsolutePath(), e);
+            throw new ConfigurationException("Failed to store the configuration into " + file.getAbsolutePath(), e);
         }
     }
 
@@ -194,12 +225,13 @@ public class JDBCConfiguration implements Serializable {
     }
 
     /**
-     * The connection pool configuration, used to build a local connection pool (with DBCP or other
-     * connection pool library)
+     * The connection pool configuration, used to build a local connection pool (with DBCP or other connection pool
+     * library).
      *
      * @author Andrea Aime - GeoSolutions
      */
     public static class ConnectionPoolConfiguration implements Serializable {
+        @Serial
         private static final long serialVersionUID = 6677252877141737936L;
 
         String driver;
@@ -365,30 +397,20 @@ public class JDBCConfiguration implements Serializable {
 
         JDBCConfiguration conf = SerializationUtils.clone(this);
 
-        final GeoWebCacheEnvironment gwcEnvironment =
-                GeoWebCacheExtensions.bean(GeoWebCacheEnvironment.class);
+        final GeoWebCacheEnvironment gwcEnvironment = GeoWebCacheExtensions.bean(GeoWebCacheEnvironment.class);
 
-        if (allowEnvParametrization
-                && gwcEnvironment != null
-                && GeoWebCacheEnvironment.ALLOW_ENV_PARAMETRIZATION) {
-            conf.setDialect((String) gwcEnvironment.resolveValue(getDialect()));
-            conf.setJNDISource((String) gwcEnvironment.resolveValue(getJNDISource()));
+        if (allowEnvParametrization && gwcEnvironment != null && gwcEnvironment.isAllowEnvParametrization()) {
+            conf.setDialect(gwcEnvironment.resolveValue(getDialect()));
+            conf.setJNDISource(gwcEnvironment.resolveValue(getJNDISource()));
             ConnectionPoolConfiguration connectionPoolConfig = getConnectionPool();
             if (connectionPoolConfig != null) {
-                ConnectionPoolConfiguration expConnectionPoolConfig =
-                        SerializationUtils.clone(connectionPoolConfig);
-                expConnectionPoolConfig.setDriver(
-                        (String) gwcEnvironment.resolveValue(connectionPoolConfig.getDriver()));
-                expConnectionPoolConfig.setUrl(
-                        (String) gwcEnvironment.resolveValue(connectionPoolConfig.getUrl()));
-                expConnectionPoolConfig.setUsername(
-                        (String) gwcEnvironment.resolveValue(connectionPoolConfig.getUsername()));
-                expConnectionPoolConfig.setPassword(
-                        (String) gwcEnvironment.resolveValue(connectionPoolConfig.getPassword()));
+                ConnectionPoolConfiguration expConnectionPoolConfig = SerializationUtils.clone(connectionPoolConfig);
+                expConnectionPoolConfig.setDriver(gwcEnvironment.resolveValue(connectionPoolConfig.getDriver()));
+                expConnectionPoolConfig.setUrl(gwcEnvironment.resolveValue(connectionPoolConfig.getUrl()));
+                expConnectionPoolConfig.setUsername(gwcEnvironment.resolveValue(connectionPoolConfig.getUsername()));
+                expConnectionPoolConfig.setPassword(gwcEnvironment.resolveValue(connectionPoolConfig.getPassword()));
                 expConnectionPoolConfig.setValidationQuery(
-                        (String)
-                                gwcEnvironment.resolveValue(
-                                        connectionPoolConfig.getValidationQuery()));
+                        gwcEnvironment.resolveValue(connectionPoolConfig.getValidationQuery()));
 
                 conf.setConnectionPool(expConnectionPoolConfig);
             }

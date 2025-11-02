@@ -38,8 +38,7 @@ public class MockWMSSourceHelper extends WMSSourceHelper {
         int tileW;
         int tileH;
         String format;
-        if (tileRespRecv instanceof ConveyorTile) {
-            ConveyorTile conveyorTile = (ConveyorTile) tileRespRecv;
+        if (tileRespRecv instanceof ConveyorTile conveyorTile) {
             long[] tileIndex = conveyorTile.getTileIndex();
             tiles = new long[1][1];
             tiles[0] = tileIndex;
@@ -50,7 +49,8 @@ public class MockWMSSourceHelper extends WMSSourceHelper {
             WMSMetaTile metaTile = (WMSMetaTile) tileRespRecv;
             tiles = metaTile.getTilesGridPositions();
             format = metaTile.getResponseFormat().getInternalName().toUpperCase();
-            GridSubset gridSubset = layer.getGridSubset(layer.getGridSubsets().iterator().next());
+            GridSubset gridSubset =
+                    layer.getGridSubset(layer.getGridSubsets().iterator().next());
             tileW = gridSubset.getTileWidth();
             tileH = gridSubset.getTileHeight();
         }
@@ -65,19 +65,13 @@ public class MockWMSSourceHelper extends WMSSourceHelper {
         if (result == null) {
             synchronized (images) {
                 if ((result = images.get(wh)) == null) {
-                    BufferedImage img =
-                            new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+                    BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
                     Graphics2D graphics = img.createGraphics();
                     graphics.setColor(Color.LIGHT_GRAY);
                     graphics.fillRect(0, 0, width, height);
 
-                    // graphics.setColor(Color.BLACK);
-                    // graphics.setFont(font);
-                    int tileN = 0;
                     for (int y = 0; y < tilesY; y++) {
                         for (int x = 0; x < tilesX; x++) {
-                            long[] t = tiles[tileN];
-                            tileN++;
                             int gx = x * tileW;
                             int gy = y * tileH;
                             // gx += 15;

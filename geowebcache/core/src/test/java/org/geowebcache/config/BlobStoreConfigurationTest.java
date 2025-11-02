@@ -1,14 +1,13 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * <p>Copyright 2018
  */
@@ -19,13 +18,14 @@ import static org.easymock.EasyMock.expectLastCall;
 import static org.easymock.EasyMock.verify;
 import static org.geowebcache.util.TestUtils.isPresent;
 import static org.geowebcache.util.TestUtils.notPresent;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -38,8 +38,7 @@ import org.geowebcache.GeoWebCacheException;
 import org.geowebcache.storage.UnsuitableStorageException;
 import org.junit.Test;
 
-public abstract class BlobStoreConfigurationTest
-        extends ConfigurationTest<BlobStoreInfo, BlobStoreConfiguration> {
+public abstract class BlobStoreConfigurationTest extends ConfigurationTest<BlobStoreInfo, BlobStoreConfiguration> {
 
     @Override
     protected void addInfo(BlobStoreConfiguration config, BlobStoreInfo info) throws Exception {
@@ -47,14 +46,12 @@ public abstract class BlobStoreConfigurationTest
     }
 
     @Override
-    protected Optional<BlobStoreInfo> getInfo(BlobStoreConfiguration config, String name)
-            throws Exception {
+    protected Optional<BlobStoreInfo> getInfo(BlobStoreConfiguration config, String name) throws Exception {
         return config.getBlobStore(name);
     }
 
     @Override
-    protected Collection<? extends BlobStoreInfo> getInfos(BlobStoreConfiguration config)
-            throws Exception {
+    protected Collection<? extends BlobStoreInfo> getInfos(BlobStoreConfiguration config) throws Exception {
         return config.getBlobStores();
     }
 
@@ -69,8 +66,7 @@ public abstract class BlobStoreConfigurationTest
     }
 
     @Override
-    protected void renameInfo(BlobStoreConfiguration config, String oldName, String newName)
-            throws Exception {
+    protected void renameInfo(BlobStoreConfiguration config, String oldName, String newName) throws Exception {
         config.renameBlobStore(oldName, newName);
     }
 
@@ -87,14 +83,11 @@ public abstract class BlobStoreConfigurationTest
         expectLastCall().andThrow(new UnsuitableStorageException("TEST"));
         EasyMock.replay(listener);
         config.addBlobStoreListener(listener);
-        exception.expect(instanceOf(ConfigurationPersistenceException.class));
-        exception.expectCause(instanceOf(UnsuitableStorageException.class));
-        try {
-            config.addBlobStore(info);
-        } finally {
-            verify(listener);
-            assertThat(config.getBlobStore("test"), notPresent());
-        }
+        ConfigurationPersistenceException exception =
+                assertThrows(ConfigurationPersistenceException.class, () -> config.addBlobStore(info));
+        assertThat(exception.getCause(), instanceOf(UnsuitableStorageException.class));
+        verify(listener);
+        assertThat(config.getBlobStore("test"), notPresent());
     }
 
     @Test
@@ -109,26 +102,20 @@ public abstract class BlobStoreConfigurationTest
         EasyMock.replay(listener);
         config.addBlobStoreListener(listener);
         config.addBlobStore(info1);
-        exception.expect(instanceOf(ConfigurationPersistenceException.class));
-        exception.expectCause(instanceOf(UnsuitableStorageException.class));
-        try {
-            config.modifyBlobStore(info2);
-        } finally {
-            verify(listener);
-            assertThat(config.getBlobStore("test"), isPresent(infoEquals(info1)));
-        }
+        ConfigurationPersistenceException exception =
+                assertThrows(ConfigurationPersistenceException.class, () -> config.modifyBlobStore(info2));
+        assertThat(exception.getCause(), instanceOf(UnsuitableStorageException.class));
+        verify(listener);
+        assertThat(config.getBlobStore("test"), isPresent(infoEquals(info1)));
     }
 
     @Test
-    public void testRollBackOnSupressedUnsuitableStorageExceptionInModifyHandler()
-            throws Exception {
+    public void testRollBackOnSupressedUnsuitableStorageExceptionInModifyHandler() throws Exception {
         BlobStoreInfo info1 = getGoodInfo("test", 1);
         BlobStoreInfo info2 = getGoodInfo("test", 2);
         IMocksControl control = EasyMock.createControl();
-        BlobStoreConfigurationListener listener1 =
-                control.createMock(BlobStoreConfigurationListener.class);
-        BlobStoreConfigurationListener listener2 =
-                control.createMock(BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener1 = control.createMock(BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener2 = control.createMock(BlobStoreConfigurationListener.class);
         control.checkOrder(true);
         listener1.handleAddBlobStore(info1);
         expectLastCall();
@@ -142,24 +129,19 @@ public abstract class BlobStoreConfigurationTest
         config.addBlobStoreListener(listener1);
         config.addBlobStoreListener(listener2);
         config.addBlobStore(info1);
-        exception.expect(instanceOf(ConfigurationPersistenceException.class));
-        exception.expectCause(instanceOf(IOException.class));
-        try {
-            config.modifyBlobStore(info2);
-        } finally {
-            control.verify();
-            assertThat(config.getBlobStore("test"), isPresent(infoEquals(info1)));
-        }
+        ConfigurationPersistenceException exception =
+                assertThrows(ConfigurationPersistenceException.class, () -> config.modifyBlobStore(info2));
+        assertThat(exception.getCause(), instanceOf(IOException.class));
+        control.verify();
+        assertThat(config.getBlobStore("test"), isPresent(infoEquals(info1)));
     }
 
     @Test
     public void testRollBackOnSupressedUnsuitableStorageExceptionInAddHandler() throws Exception {
         BlobStoreInfo info1 = getGoodInfo("test", 1);
         IMocksControl control = EasyMock.createControl();
-        BlobStoreConfigurationListener listener1 =
-                control.createMock(BlobStoreConfigurationListener.class);
-        BlobStoreConfigurationListener listener2 =
-                control.createMock(BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener1 = control.createMock(BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener2 = control.createMock(BlobStoreConfigurationListener.class);
         control.checkOrder(true);
         listener1.handleAddBlobStore(info1);
         expectLastCall().andThrow(new UnsuitableStorageException("TEST"));
@@ -168,20 +150,16 @@ public abstract class BlobStoreConfigurationTest
         control.replay();
         config.addBlobStoreListener(listener1);
         config.addBlobStoreListener(listener2);
-        exception.expect(instanceOf(ConfigurationPersistenceException.class));
-        exception.expectCause(instanceOf(IOException.class));
-        try {
-            config.addBlobStore(info1);
-        } finally {
-            control.verify();
-            assertThat(config.getBlobStore("test"), notPresent());
-        }
+        ConfigurationPersistenceException exception =
+                assertThrows(ConfigurationPersistenceException.class, () -> config.addBlobStore(info1));
+        assertThat(exception.getCause(), instanceOf(IOException.class));
+        control.verify();
+        assertThat(config.getBlobStore("test"), notPresent());
     }
 
     @Test
     public void testListenerHearsAdd() throws Exception {
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         this.config.addBlobStoreListener(listener);
         BlobStoreInfo goodInfo = this.getGoodInfo("test", 1);
         listener.handleAddBlobStore(EasyMock.eq(goodInfo));
@@ -195,8 +173,7 @@ public abstract class BlobStoreConfigurationTest
     public void testListenerHearsRemove() throws Exception {
         BlobStoreInfo goodInfo = this.getGoodInfo("test", 1);
         this.addInfo(this.config, goodInfo);
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         this.config.addBlobStoreListener(listener);
         listener.handleRemoveBlobStore(EasyMock.eq(goodInfo));
         EasyMock.expectLastCall().once();
@@ -209,8 +186,7 @@ public abstract class BlobStoreConfigurationTest
     public void testListenerHearsModify() throws Exception {
         BlobStoreInfo goodInfo = this.getGoodInfo("test", 1);
         this.addInfo(this.config, goodInfo);
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         this.config.addBlobStoreListener(listener);
         listener.handleModifyBlobStore(EasyMock.eq(goodInfo));
         EasyMock.expectLastCall().once();
@@ -225,8 +201,7 @@ public abstract class BlobStoreConfigurationTest
         BlobStoreInfo goodInfo = this.getGoodInfo("test", 1);
         BlobStoreInfo expectedInfo = this.getGoodInfo("newName", 1);
         this.addInfo(this.config, goodInfo);
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         this.config.addBlobStoreListener(listener);
         listener.handleRenameBlobStore(EasyMock.eq("test"), EasyMock.eq(expectedInfo));
         EasyMock.expectLastCall().once();
@@ -272,8 +247,7 @@ public abstract class BlobStoreConfigurationTest
 
     @Test
     public void testListenerDoesntHearFailureToAddBadInfo() throws Exception {
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         this.config.addBlobStoreListener(listener);
         BlobStoreInfo badInfo = this.getBadInfo("test", 1);
         // listener.handleAddBlobStore(EasyMock.eq(badInfo)); EasyMock.expectLastCall().once();
@@ -288,8 +262,7 @@ public abstract class BlobStoreConfigurationTest
 
     @Test
     public void testListenerDoesntHearFailureToAddDuplicate() throws Exception {
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         BlobStoreInfo goodInfo = this.getGoodInfo("test", 1);
         this.addInfo(this.config, goodInfo);
         BlobStoreInfo goodInfo2 = this.getGoodInfo("test", 2);
@@ -306,8 +279,7 @@ public abstract class BlobStoreConfigurationTest
 
     @Test
     public void testListenerDoesntHearFailureToAddDueToBackend() throws Exception {
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         this.config.addBlobStoreListener(listener);
         BlobStoreInfo goodInfo = this.getGoodInfo("test", 1);
         // listener.handleAddBlobStore(EasyMock.eq(badInfo)); EasyMock.expectLastCall().once();
@@ -323,8 +295,7 @@ public abstract class BlobStoreConfigurationTest
 
     @Test
     public void testListenerDoesntHearFailureToModifyBadInfo() throws Exception {
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         BlobStoreInfo goodInfo = this.getGoodInfo("test", 1);
         this.addInfo(this.config, goodInfo);
         this.config.addBlobStoreListener(listener);
@@ -340,8 +311,7 @@ public abstract class BlobStoreConfigurationTest
 
     @Test
     public void testListenerDoesntHearFailureToModifyDoesntExist() throws Exception {
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         this.config.addBlobStoreListener(listener);
         BlobStoreInfo goodInfo = this.getGoodInfo("test", 1);
         EasyMock.replay(listener);
@@ -355,8 +325,7 @@ public abstract class BlobStoreConfigurationTest
 
     @Test
     public void testListenerDoesntHearFailureToModifyDueToBackend() throws Exception {
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         BlobStoreInfo goodInfo = this.getGoodInfo("test", 1);
         this.addInfo(this.config, goodInfo);
         this.config.addBlobStoreListener(listener);
@@ -373,8 +342,7 @@ public abstract class BlobStoreConfigurationTest
 
     @Test
     public void testListenerDoesntHearFailureToRemoveDoesntExist() throws Exception {
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         this.config.addBlobStoreListener(listener);
         EasyMock.replay(listener);
         try {
@@ -387,8 +355,7 @@ public abstract class BlobStoreConfigurationTest
 
     @Test
     public void testListenerDoesntHearFailureToRemoveDueToBackend() throws Exception {
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         BlobStoreInfo goodInfo = this.getGoodInfo("test", 1);
         this.addInfo(this.config, goodInfo);
         this.config.addBlobStoreListener(listener);
@@ -404,8 +371,7 @@ public abstract class BlobStoreConfigurationTest
 
     @Test
     public void testListenerDoesntHearFailureToRenameDoesntExist() throws Exception {
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         this.config.addBlobStoreListener(listener);
         EasyMock.replay(listener);
         try {
@@ -418,8 +384,7 @@ public abstract class BlobStoreConfigurationTest
 
     @Test
     public void testListenerDoesntHearFailureToRenameDuplicate() throws Exception {
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         BlobStoreInfo goodInfo = this.getGoodInfo("test", 1);
         this.addInfo(this.config, goodInfo);
         BlobStoreInfo goodInfo2 = this.getGoodInfo("test2", 1);
@@ -436,8 +401,7 @@ public abstract class BlobStoreConfigurationTest
 
     @Test
     public void testListenerDoesntHearFailureToRenameDueToBackend() throws Exception {
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         BlobStoreInfo goodInfo = this.getGoodInfo("test", 1);
         this.addInfo(this.config, goodInfo);
         this.config.addBlobStoreListener(listener);
@@ -455,8 +419,7 @@ public abstract class BlobStoreConfigurationTest
 
     @Test
     public void testExceptionInAddListenerIsWrapped() throws Exception {
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         BlobStoreInfo goodInfo = this.getGoodInfo("test", 1);
         this.config.addBlobStoreListener(listener);
         listener.handleAddBlobStore(goodInfo);
@@ -464,18 +427,14 @@ public abstract class BlobStoreConfigurationTest
         EasyMock.expectLastCall().andThrow(ex);
         EasyMock.replay(listener);
 
-        exception.expect(
-                allOf(
-                        instanceOf(ConfigurationPersistenceException.class),
-                        hasProperty("cause", sameInstance(ex))));
-
-        this.addInfo(this.config, goodInfo);
+        ConfigurationPersistenceException exception =
+                assertThrows(ConfigurationPersistenceException.class, () -> addInfo(config, goodInfo));
+        assertThat(exception.getCause(), sameInstance(ex));
     }
 
     @Test
     public void testExceptionInAddListenerNotRolledBack() throws Exception {
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         BlobStoreInfo goodInfo = this.getGoodInfo("test", 1);
         this.config.addBlobStoreListener(listener);
         listener.handleAddBlobStore(goodInfo);
@@ -518,7 +477,6 @@ public abstract class BlobStoreConfigurationTest
         EasyMock.verify(listener2);
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void testExceptionInAddListenerRecordsSuppressedExceptions() throws Exception {
         BlobStoreConfigurationListener listener1 =
@@ -537,25 +495,17 @@ public abstract class BlobStoreConfigurationTest
 
         EasyMock.replay(listener1, listener2);
 
-        exception.expect(
-                allOf(
-                        instanceOf(ConfigurationPersistenceException.class),
-                        hasProperty(
-                                "cause",
-                                allOf(
-                                        sameInstance(ex2),
-                                        hasProperty(
-                                                "suppressed",
-                                                arrayContainingInAnyOrder(sameInstance(ex1)))))));
-
-        this.addInfo(this.config, goodInfo);
+        ConfigurationPersistenceException exception =
+                assertThrows(ConfigurationPersistenceException.class, () -> addInfo(config, goodInfo));
+        assertThat(
+                exception.getCause(),
+                allOf(sameInstance(ex2), hasProperty("suppressed", arrayContainingInAnyOrder(sameInstance(ex1)))));
     }
     // Exceptions during modify handlers
 
     @Test
     public void testExceptionInModifyListenerIsWrapped() throws Exception {
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         BlobStoreInfo goodInfo = prepForModify();
 
         this.config.addBlobStoreListener(listener);
@@ -564,12 +514,9 @@ public abstract class BlobStoreConfigurationTest
         EasyMock.expectLastCall().andThrow(ex);
         EasyMock.replay(listener);
 
-        exception.expect(
-                allOf(
-                        instanceOf(ConfigurationPersistenceException.class),
-                        hasProperty("cause", sameInstance(ex))));
-
-        this.modifyInfo(this.config, goodInfo);
+        ConfigurationPersistenceException exception =
+                assertThrows(ConfigurationPersistenceException.class, () -> modifyInfo(config, goodInfo));
+        assertThat(exception.getCause(), sameInstance(ex));
     }
 
     /**
@@ -586,8 +533,7 @@ public abstract class BlobStoreConfigurationTest
 
     @Test
     public void testExceptionInModifyListenerNotRolledBack() throws Exception {
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         BlobStoreInfo goodInfo = prepForModify();
 
         this.config.addBlobStoreListener(listener);
@@ -631,7 +577,6 @@ public abstract class BlobStoreConfigurationTest
         EasyMock.verify(listener2);
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void testExceptionInModifyListenerRecordsSuppressedExceptions() throws Exception {
         BlobStoreConfigurationListener listener1 =
@@ -650,18 +595,15 @@ public abstract class BlobStoreConfigurationTest
 
         EasyMock.replay(listener1, listener2);
 
-        exception.expect(
-                allOf(
-                        instanceOf(ConfigurationPersistenceException.class),
-                        hasProperty(
-                                "cause",
-                                allOf(
-                                        sameInstance(ex2),
-                                        hasProperty(
-                                                "suppressed",
-                                                arrayContainingInAnyOrder(sameInstance(ex1)))))));
-
-        this.modifyInfo(this.config, goodInfo);
+        ConfigurationPersistenceException exception =
+                assertThrows(ConfigurationPersistenceException.class, () -> modifyInfo(config, goodInfo));
+        assertThat(
+                exception,
+                hasProperty(
+                        "cause",
+                        allOf(
+                                sameInstance(ex2),
+                                hasProperty("suppressed", arrayContainingInAnyOrder(sameInstance(ex1))))));
     }
 
     // Exceptions during rename handlers
@@ -679,8 +621,7 @@ public abstract class BlobStoreConfigurationTest
 
     @Test
     public void testExceptionInRenameListenerIsWrapped() throws Exception {
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         BlobStoreInfo goodInfo = prepForRename();
 
         this.config.addBlobStoreListener(listener);
@@ -689,18 +630,14 @@ public abstract class BlobStoreConfigurationTest
         EasyMock.expectLastCall().andThrow(ex);
         EasyMock.replay(listener);
 
-        exception.expect(
-                allOf(
-                        instanceOf(ConfigurationPersistenceException.class),
-                        hasProperty("cause", sameInstance(ex))));
-
-        this.renameInfo(this.config, "test", "test2");
+        ConfigurationPersistenceException exception =
+                assertThrows(ConfigurationPersistenceException.class, () -> renameInfo(config, "test", "test2"));
+        assertThat(exception.getCause(), sameInstance(ex));
     }
 
     @Test
     public void testExceptionInRenameListenerNotRolledBack() throws Exception {
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         BlobStoreInfo goodInfo = prepForRename();
 
         this.config.addBlobStoreListener(listener);
@@ -744,7 +681,6 @@ public abstract class BlobStoreConfigurationTest
         EasyMock.verify(listener2);
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void testExceptionInRenameListenerRecordsSuppressedExceptions() throws Exception {
         BlobStoreConfigurationListener listener1 =
@@ -763,18 +699,15 @@ public abstract class BlobStoreConfigurationTest
 
         EasyMock.replay(listener1, listener2);
 
-        exception.expect(
-                allOf(
-                        instanceOf(ConfigurationPersistenceException.class),
-                        hasProperty(
-                                "cause",
-                                allOf(
-                                        sameInstance(ex2),
-                                        hasProperty(
-                                                "suppressed",
-                                                arrayContainingInAnyOrder(sameInstance(ex1)))))));
-
-        this.renameInfo(this.config, "test", "test2");
+        ConfigurationPersistenceException exception =
+                assertThrows(ConfigurationPersistenceException.class, () -> renameInfo(config, "test", "test2"));
+        assertThat(
+                exception,
+                hasProperty(
+                        "cause",
+                        allOf(
+                                sameInstance(ex2),
+                                hasProperty("suppressed", arrayContainingInAnyOrder(sameInstance(ex1))))));
     }
 
     // Exceptions during remove handlers
@@ -792,8 +725,7 @@ public abstract class BlobStoreConfigurationTest
 
     @Test
     public void testExceptionInRemoveListenerIsWrapped() throws Exception {
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         BlobStoreInfo goodInfo = prepForRemove();
 
         this.config.addBlobStoreListener(listener);
@@ -802,18 +734,14 @@ public abstract class BlobStoreConfigurationTest
         EasyMock.expectLastCall().andThrow(ex);
         EasyMock.replay(listener);
 
-        exception.expect(
-                allOf(
-                        instanceOf(ConfigurationPersistenceException.class),
-                        hasProperty("cause", sameInstance(ex))));
-
-        this.removeInfo(this.config, "test");
+        ConfigurationPersistenceException exception =
+                assertThrows(ConfigurationPersistenceException.class, () -> removeInfo(config, "test"));
+        assertThat(exception.getCause(), sameInstance(ex));
     }
 
     @Test
     public void testExceptionInRemoveListenerNotRolledBack() throws Exception {
-        BlobStoreConfigurationListener listener =
-                EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
+        BlobStoreConfigurationListener listener = EasyMock.createMock("listener", BlobStoreConfigurationListener.class);
         BlobStoreInfo goodInfo = prepForRemove();
 
         this.config.addBlobStoreListener(listener);
@@ -857,7 +785,6 @@ public abstract class BlobStoreConfigurationTest
         EasyMock.verify(listener2);
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void testExceptionInRemoveListenerRecordsSuppressedExceptions() throws Exception {
         BlobStoreConfigurationListener listener1 =
@@ -876,17 +803,14 @@ public abstract class BlobStoreConfigurationTest
 
         EasyMock.replay(listener1, listener2);
 
-        exception.expect(
-                allOf(
-                        instanceOf(ConfigurationPersistenceException.class),
-                        hasProperty(
-                                "cause",
-                                allOf(
-                                        sameInstance(ex2),
-                                        hasProperty(
-                                                "suppressed",
-                                                arrayContainingInAnyOrder(sameInstance(ex1)))))));
-
-        this.removeInfo(this.config, "test");
+        ConfigurationPersistenceException exception =
+                assertThrows(ConfigurationPersistenceException.class, () -> removeInfo(config, "test"));
+        assertThat(
+                exception,
+                hasProperty(
+                        "cause",
+                        allOf(
+                                sameInstance(ex2),
+                                hasProperty("suppressed", arrayContainingInAnyOrder(sameInstance(ex1))))));
     }
 }

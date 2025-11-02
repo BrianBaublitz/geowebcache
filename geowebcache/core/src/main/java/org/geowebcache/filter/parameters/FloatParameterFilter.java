@@ -1,14 +1,13 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Arne Kepp, The Open Planning Project, Copyright 2009
  */
@@ -16,6 +15,7 @@ package org.geowebcache.filter.parameters;
 
 import com.google.common.base.Preconditions;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -28,6 +28,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @XStreamAlias("floatParameterFilter")
 public class FloatParameterFilter extends ParameterFilter {
 
+    @Serial
     private static final long serialVersionUID = 4186888723396139208L;
 
     private static Float DEFAULT_THRESHOLD = Float.valueOf(1E-6f);
@@ -62,8 +63,8 @@ public class FloatParameterFilter extends ParameterFilter {
     }
 
     /**
-     * @return the values the parameter can take. Altering this list is deprecated and in future it
-     *     will be unmodifiable; use {@link #setValues(List)} instead.
+     * @return the values the parameter can take. Altering this list is deprecated and in future it will be
+     *     unmodifiable; use {@link #setValues(List)} instead.
      */
     public List<Float> getValues() {
         // TODO: apply Collections.unmodifiableList(...)
@@ -122,15 +123,14 @@ public class FloatParameterFilter extends ParameterFilter {
             return Float.toString(best);
         }
 
-        throw new ParameterException(
-                "Closest match for "
-                        + super.getKey()
-                        + "="
-                        + str
-                        + " is "
-                        + best
-                        + ", but this exceeds the threshold of "
-                        + threshold);
+        throw new ParameterException("Closest match for "
+                + super.getKey()
+                + "="
+                + str
+                + " is "
+                + best
+                + ", but this exceeds the threshold of "
+                + threshold);
     }
 
     @Override
@@ -180,12 +180,6 @@ public class FloatParameterFilter extends ParameterFilter {
 
     @Override
     public String toString() {
-        return "FloatParameterFilter [values="
-                + values
-                + ", threshold="
-                + threshold
-                + ", "
-                + super.toString()
-                + "]";
+        return "FloatParameterFilter [values=" + values + ", threshold=" + threshold + ", " + super.toString() + "]";
     }
 }

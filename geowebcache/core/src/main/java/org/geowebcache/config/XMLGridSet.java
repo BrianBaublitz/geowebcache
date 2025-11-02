@@ -1,19 +1,19 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Arne Kepp, OpenGeo, Copyright 2009
  */
 package org.geowebcache.config;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Arrays;
 import org.geowebcache.grid.BoundingBox;
@@ -28,6 +28,7 @@ import org.geowebcache.grid.SRS;
  */
 public class XMLGridSet implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 2684804068163933728L;
 
     private String name;
@@ -67,10 +68,13 @@ public class XMLGridSet implements Serializable {
     public XMLGridSet(XMLGridSet orig) {
         setAlignTopLeft(orig.getAlignTopLeft());
         setExtent(orig.getExtent() == null ? null : new BoundingBox(orig.getExtent()));
-        setResolutions(orig.getResolutions() == null ? null : orig.getResolutions().clone());
+        setResolutions(
+                orig.getResolutions() == null ? null : orig.getResolutions().clone());
         setLevels(orig.getLevels());
         setScaleDenominators(
-                orig.getScaleDenominators() == null ? null : orig.getScaleDenominators().clone());
+                orig.getScaleDenominators() == null
+                        ? null
+                        : orig.getScaleDenominators().clone());
         setMetersPerUnit(orig.getMetersPerUnit());
         setName(orig.getName());
         setDescription(orig.getDescription());
@@ -185,38 +189,36 @@ public class XMLGridSet implements Serializable {
         Boolean yCoordinateFirst = getYCoordinateFirst();
 
         if (getResolutions() != null || getScaleDenominators() != null) {
-            gridSet =
-                    GridSetFactory.createGridSet(
-                            name,
-                            srs,
-                            extent,
-                            alignTopLeft,
-                            resolutions,
-                            scaleDenominators,
-                            metersPerUnit,
-                            pixelSize,
-                            scaleNames,
-                            tileWidth,
-                            tileHeight,
-                            yCoordinateFirst);
+            gridSet = GridSetFactory.createGridSet(
+                    name,
+                    srs,
+                    extent,
+                    alignTopLeft,
+                    resolutions,
+                    scaleDenominators,
+                    metersPerUnit,
+                    pixelSize,
+                    scaleNames,
+                    tileWidth,
+                    tileHeight,
+                    yCoordinateFirst);
         } else {
             if (getLevels() == null) {
                 setLevels(18);
             }
 
             Integer levels = getLevels();
-            gridSet =
-                    GridSetFactory.createGridSet(
-                            name,
-                            srs,
-                            extent,
-                            alignTopLeft,
-                            levels,
-                            metersPerUnit,
-                            pixelSize,
-                            tileWidth,
-                            tileHeight,
-                            yCoordinateFirst);
+            gridSet = GridSetFactory.createGridSet(
+                    name,
+                    srs,
+                    extent,
+                    alignTopLeft,
+                    levels,
+                    metersPerUnit,
+                    pixelSize,
+                    tileWidth,
+                    tileHeight,
+                    yCoordinateFirst);
         }
 
         gridSet.setDescription(getDescription());

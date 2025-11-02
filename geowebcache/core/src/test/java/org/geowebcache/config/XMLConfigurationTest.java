@@ -1,14 +1,13 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * <p>Copyright 2018
  */
@@ -17,7 +16,10 @@ package org.geowebcache.config;
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertArrayEquals;
@@ -27,14 +29,18 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FilterOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,6 +54,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.io.FileUtils;
 import org.geotools.util.logging.Logging;
+import org.geowebcache.GeoWebCacheException;
 import org.geowebcache.GeoWebCacheExtensions;
 import org.geowebcache.MockWepAppContextRule;
 import org.geowebcache.config.legends.LegendRawInfo;
@@ -64,12 +71,16 @@ import org.geowebcache.grid.GridSubsetFactory;
 import org.geowebcache.grid.SRS;
 import org.geowebcache.layer.TileLayer;
 import org.geowebcache.layer.wms.WMSLayer;
+import org.geowebcache.storage.UnsuitableStorageException;
 import org.geowebcache.util.TestUtils;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.Mockito;
 import org.springframework.context.ApplicationContext;
+import org.springframework.web.context.WebApplicationContext;
 import org.xml.sax.SAXParseException;
 
 public class XMLConfigurationTest {
@@ -84,7 +95,9 @@ public class XMLConfigurationTest {
 
     private XMLConfiguration config;
 
-    @Rule public TemporaryFolder temp = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder temp = new TemporaryFolder();
+
     @Rule // Not actually used but it protects against other tests that clutter the extension system
     public MockWepAppContextRule contextRule = new MockWepAppContextRule();
 
@@ -93,13 +106,10 @@ public class XMLConfigurationTest {
         configDir = temp.getRoot();
         configFile = temp.newFile("geowebcache.xml");
 
-        URL source =
-                XMLConfiguration.class.getResource(
-                        XMLConfigurationBackwardsCompatibilityTest.LATEST_FILENAME);
+        URL source = XMLConfiguration.class.getResource(XMLConfigurationBackwardsCompatibilityTest.LATEST_FILENAME);
         FileUtils.copyURLToFile(source, configFile);
 
-        gridSetBroker =
-                new GridSetBroker(Collections.singletonList(new DefaultGridsets(true, true)));
+        gridSetBroker = new GridSetBroker(Collections.singletonList(new DefaultGridsets(true, true)));
         config = new XMLConfiguration(null, configDir.getAbsolutePath());
         config.setGridSetBroker(gridSetBroker);
         config.afterPropertiesSet();
@@ -220,19 +230,18 @@ public class XMLConfigurationTest {
         boolean queryable = false;
         String wmsQueryLayers = null;
 
-        WMSLayer layer =
-                new WMSLayer(
-                        layerName,
-                        wmsURL,
-                        wmsStyles,
-                        wmsLayers,
-                        mimeFormats,
-                        subSets,
-                        parameterFilters,
-                        metaWidthHeight,
-                        vendorParams,
-                        queryable,
-                        wmsQueryLayers);
+        WMSLayer layer = new WMSLayer(
+                layerName,
+                wmsURL,
+                wmsStyles,
+                wmsLayers,
+                mimeFormats,
+                subSets,
+                parameterFilters,
+                metaWidthHeight,
+                vendorParams,
+                queryable,
+                wmsQueryLayers);
 
         // create legends information
         LegendsRawInfo legendsRawInfo = new LegendsRawInfo();
@@ -265,8 +274,7 @@ public class XMLConfigurationTest {
         config.addLayer(layer);
 
         try {
-            XMLConfiguration.validate(
-                    XMLConfiguration.loadDocument(new FileInputStream(configFile)));
+            XMLConfiguration.validate(XMLConfiguration.loadDocument(new FileInputStream(configFile)));
         } catch (SAXParseException e) {
             log.log(Level.SEVERE, e.getMessage());
             fail(e.getMessage());
@@ -298,8 +306,7 @@ public class XMLConfigurationTest {
         assertThat(l.getLegends().getDefaultFormat(), is("image/png"));
         assertThat(l.getLegends().getLegendsRawInfo().size(), is(3));
         assertThat(
-                l.getLegends().getLegendsRawInfo(),
-                containsInAnyOrder(legendRawInfoA, legendRawInfoB, legendRawInfoC));
+                l.getLegends().getLegendsRawInfo(), containsInAnyOrder(legendRawInfoA, legendRawInfoB, legendRawInfoC));
     }
 
     public WMSLayer createTestLayer(String layerName) {
@@ -323,19 +330,18 @@ public class XMLConfigurationTest {
         boolean queryable = false;
         String wmsQueryLayers = null;
 
-        WMSLayer layer =
-                new WMSLayer(
-                        layerName,
-                        wmsURL,
-                        wmsStyles,
-                        wmsLayers,
-                        mimeFormats,
-                        subSets,
-                        parameterFilters,
-                        metaWidthHeight,
-                        vendorParams,
-                        queryable,
-                        wmsQueryLayers);
+        WMSLayer layer = new WMSLayer(
+                layerName,
+                wmsURL,
+                wmsStyles,
+                wmsLayers,
+                mimeFormats,
+                subSets,
+                parameterFilters,
+                metaWidthHeight,
+                vendorParams,
+                queryable,
+                wmsQueryLayers);
 
         // create legends information
         LegendsRawInfo legendsRawInfo = new LegendsRawInfo();
@@ -383,35 +389,32 @@ public class XMLConfigurationTest {
         int tileHeight = 512;
         boolean yCoordinateFirst = true;
 
-        GridSet gridSet =
-                GridSetFactory.createGridSet(
-                        name,
-                        srs,
-                        extent,
-                        alignTopLeft,
-                        resolutions,
-                        scaleDenoms,
-                        metersPerUnit,
-                        pixelSize,
-                        scaleNames,
-                        tileWidth,
-                        tileHeight,
-                        yCoordinateFirst);
+        GridSet gridSet = GridSetFactory.createGridSet(
+                name,
+                srs,
+                extent,
+                alignTopLeft,
+                resolutions,
+                scaleDenoms,
+                metersPerUnit,
+                pixelSize,
+                scaleNames,
+                tileWidth,
+                tileHeight,
+                yCoordinateFirst);
         gridSet.setDescription("test description");
 
         config.addGridSet(gridSet);
 
         try {
-            XMLConfiguration.validate(
-                    XMLConfiguration.loadDocument(new FileInputStream(configFile)));
+            XMLConfiguration.validate(XMLConfiguration.loadDocument(new FileInputStream(configFile)));
         } catch (SAXParseException e) {
             log.log(Level.SEVERE, e.getMessage());
             fail(e.getMessage());
         }
 
         XMLConfiguration config2 = new XMLConfiguration(null, configDir.getAbsolutePath());
-        GridSetBroker gridSetBroker2 =
-                new GridSetBroker(Arrays.asList(new DefaultGridsets(true, true), config2));
+        GridSetBroker gridSetBroker2 = new GridSetBroker(Arrays.asList(new DefaultGridsets(true, true), config2));
         config2.setGridSetBroker(gridSetBroker2);
         config2.afterPropertiesSet();
         config2.getLayerCount();
@@ -456,27 +459,13 @@ public class XMLConfigurationTest {
         // get the internal default GridSet for 4326.
         GridSet internal4326 = defaultGridSets.worldEpsg4326();
         // override should have a different resolution list
-        assertEquals(
-                "Unexpected number of Default EPSG:4326 resolution levels",
-                22,
-                internal4326.getNumLevels());
-        assertEquals(
-                "Unexpected number of Overriden EPSG:4326 resolution levels",
-                14,
-                override4326.getNumLevels());
+        assertEquals("Unexpected number of Default EPSG:4326 resolution levels", 22, internal4326.getNumLevels());
+        assertEquals("Unexpected number of Overriden EPSG:4326 resolution levels", 14, override4326.getNumLevels());
         // first level on override should be 1.40625
         final Grid overrideLevel = override4326.getGrid(0);
         final Grid defaultLevel = internal4326.getGrid(0);
-        assertEquals(
-                "Unexpected default resolution level 0",
-                0.703125,
-                defaultLevel.getResolution(),
-                0d);
-        assertEquals(
-                "Unexpected override resolution level 0",
-                1.40625,
-                overrideLevel.getResolution(),
-                0d);
+        assertEquals("Unexpected default resolution level 0", 0.703125, defaultLevel.getResolution(), 0d);
+        assertEquals("Unexpected override resolution level 0", 1.40625, overrideLevel.getResolution(), 0d);
         // ensure descriptions are expected
         final String overrideDescription = override4326.getDescription();
         final String defaultDescription = internal4326.getDescription();
@@ -495,7 +484,7 @@ public class XMLConfigurationTest {
     }
 
     @Test
-    public void testSaveBlobStores() throws Exception {
+    public void testAddBlobStores() throws Exception {
         FileBlobStoreInfo store1 = new FileBlobStoreInfo();
         store1.setName("store1");
         store1.setDefault(true);
@@ -514,16 +503,14 @@ public class XMLConfigurationTest {
         config.addBlobStore(store2);
 
         try {
-            XMLConfiguration.validate(
-                    XMLConfiguration.loadDocument(new FileInputStream(configFile)));
+            XMLConfiguration.validate(XMLConfiguration.loadDocument(new FileInputStream(configFile)));
         } catch (SAXParseException e) {
             log.log(Level.SEVERE, e.getMessage());
             fail(e.getMessage());
         }
 
         XMLConfiguration config2 = new XMLConfiguration(null, configDir.getAbsolutePath());
-        config2.setGridSetBroker(
-                new GridSetBroker(Collections.singletonList(new DefaultGridsets(true, true))));
+        config2.setGridSetBroker(new GridSetBroker(Collections.singletonList(new DefaultGridsets(true, true))));
         config2.afterPropertiesSet();
         config2.getLayerCount();
 
@@ -538,16 +525,157 @@ public class XMLConfigurationTest {
     }
 
     @Test
+    public void testAddBlobStoreExceptionSaving() throws Exception {
+
+        XMLFileResourceProvider resourceProvider =
+                new XMLFileResourceProvider(
+                        XMLConfiguration.DEFAULT_CONFIGURATION_FILE_NAME,
+                        (WebApplicationContext) null,
+                        this.configDir.getAbsolutePath(),
+                        null) {
+
+                    // throw an ioexception the first time close() is called, the second time is the roll-back
+                    private boolean thrown = false;
+
+                    @Override
+                    public OutputStream out() throws IOException {
+                        OutputStream real = super.out();
+                        return new FilterOutputStream(real) {
+
+                            @Override
+                            public void close() throws IOException {
+                                real.close();
+                                if (thrown) {
+                                    return;
+                                }
+                                thrown = true;
+                                throw new IOException("forced io exception");
+                            }
+                        };
+                    }
+                };
+
+        config = new XMLConfiguration(null, resourceProvider);
+        config.setGridSetBroker(gridSetBroker);
+
+        FileBlobStoreInfo store1 = new FileBlobStoreInfo();
+        store1.setName("store1");
+        store1.setDefault(true);
+        store1.setEnabled(true);
+        store1.setFileSystemBlockSize(8096);
+        store1.setBaseDirectory("/tmp/test");
+
+        assertThrows(ConfigurationPersistenceException.class, () -> config.addBlobStore(store1));
+        assertEquals(0, config.getBlobStoreCount());
+        GeoWebCacheConfiguration configuration = config.loadConfiguration();
+        assertTrue("store shouldn't be saved", configuration.getBlobStores().isEmpty());
+    }
+
+    /**
+     * Verifies the blobstore configuration is rolled back from the persisted configuration if a
+     * {@link BlobStoreConfigurationListener#handleAddBlobStore} throws an {@link UnsuitableStorageException}.
+     *
+     * <p>Note I'm not sure why XMLConfiguration.addBlobStore() only rolls-back on UnsuitableStorageException and not on
+     * IOException or GeoWebCacheException
+     */
+    @Test
+    public void testAddBlobStoreExceptionFromListener() throws Exception {
+        FileBlobStoreInfo store1 = new FileBlobStoreInfo();
+        store1.setName("store1");
+        store1.setDefault(true);
+        store1.setEnabled(true);
+        store1.setFileSystemBlockSize(8096);
+        store1.setBaseDirectory("/tmp/test");
+
+        BlobStoreConfigurationListener listener;
+
+        listener = mock(BlobStoreConfigurationListener.class);
+        doThrow(new UnsuitableStorageException("fake")).when(listener).handleAddBlobStore(Mockito.any());
+        config.addBlobStoreListener(listener);
+
+        assertAddBlobStoreFails(store1, UnsuitableStorageException.class);
+
+        // note, I'm not sure why XMLConfiguration.addBlobStore() only rolls-back on UnsuitableStorageException and not
+        // on IOException or GeoWebCacheException
+        // doThrow(new IOException("fake")).when(listener).handleAddBlobStore(Mockito.any());
+        // assertAddBlobStoreFails(store1, IOException.class);
+        //
+        // doThrow(new GeoWebCacheException("fake")).when(listener).handleAddBlobStore(Mockito.any());
+        // assertAddBlobStoreFails(store1, GeoWebCacheException.class);
+    }
+
+    private void assertAddBlobStoreFails(FileBlobStoreInfo store, Class<? extends Exception> expectedCause)
+            throws ConfigurationException {
+        ConfigurationPersistenceException expected;
+        expected = assertThrows(ConfigurationPersistenceException.class, () -> config.addBlobStore(store));
+        assertThat(expected.getCause(), instanceOf(expectedCause));
+        assertEquals(0, config.getBlobStoreCount());
+        GeoWebCacheConfiguration configuration = config.loadConfiguration();
+        assertTrue("store shouldn't be saved", configuration.getBlobStores().isEmpty());
+    }
+
+    /**
+     * Verifies the blobstore configuration is rolled back from the persisted configuration if a
+     * {@link BlobStoreConfigurationListener#handleModifyBlobStore(BlobStoreInfo)} throws an
+     * {@link UnsuitableStorageException}.
+     *
+     * <p>Note I'm not sure why XMLConfiguration.modifyBobstore() only rolls-back on UnsuitableStorageException and not
+     * on IOException or GeoWebCacheException
+     */
+    @Test
+    public void testModifyBlobStoreExceptionFromListener() throws Exception {
+        FileBlobStoreInfo original = new FileBlobStoreInfo();
+        original.setName("store1");
+        original.setDefault(true);
+        original.setEnabled(true);
+        original.setFileSystemBlockSize(8096);
+        original.setBaseDirectory("/tmp/test");
+
+        config.addBlobStore(original);
+
+        BlobStoreConfigurationListener listener;
+
+        listener = mock(BlobStoreConfigurationListener.class);
+        doThrow(new UnsuitableStorageException("fake")).when(listener).handleModifyBlobStore(Mockito.any());
+        config.addBlobStoreListener(listener);
+
+        assertModifyBlobStoreFails(original, UnsuitableStorageException.class);
+
+        // note, I'm not sure why XMLConfiguration.addBlobStore() only rolls-back on UnsuitableStorageException and not
+        // on IOException or GeoWebCacheException
+        // doThrow(new IOException("fake")).when(listener).handleModifyBlobStore(Mockito.any());
+        // assertModifyBlobStoreFails(original, IOException.class);
+        //
+        // doThrow(new GeoWebCacheException("fake")).when(listener).handleModifyBlobStore(Mockito.any());
+        // assertModifyBlobStoreFails(original, GeoWebCacheException.class);
+    }
+
+    private void assertModifyBlobStoreFails(FileBlobStoreInfo original, Class<? extends Exception> expectedCause)
+            throws ConfigurationException {
+
+        FileBlobStoreInfo modified = (FileBlobStoreInfo) original.clone();
+        modified.setBaseDirectory("/tmp/test2");
+
+        assertEquals(1, config.getBlobStoreCount());
+
+        ConfigurationPersistenceException expected;
+        expected = assertThrows(ConfigurationPersistenceException.class, () -> config.modifyBlobStore(modified));
+        assertThat(expected.getCause(), instanceOf(expectedCause));
+        GeoWebCacheConfiguration reloaded = config.loadConfiguration();
+        assertEquals(1, reloaded.getBlobStores().size());
+
+        BlobStoreInfo stored = reloaded.getBlobStores().get(0);
+        assertEquals("store shouldn't be saved", original, stored);
+    }
+
+    @Test
     public void testSaveCurrentVersion() throws Exception {
 
-        URL source =
-                XMLConfiguration.class.getResource(
-                        XMLConfigurationBackwardsCompatibilityTest.GWC_125_CONFIG_FILE);
+        URL source = XMLConfiguration.class.getResource(XMLConfigurationBackwardsCompatibilityTest.GWC_125_CONFIG_FILE);
         configFile = new File(configDir, "geowebcache.xml");
         FileUtils.copyURLToFile(source, configFile);
 
-        gridSetBroker =
-                new GridSetBroker(Collections.singletonList(new DefaultGridsets(true, true)));
+        gridSetBroker = new GridSetBroker(Collections.singletonList(new DefaultGridsets(true, true)));
         config = new XMLConfiguration(null, configDir.getAbsolutePath());
         config.setGridSetBroker(gridSetBroker);
         config.afterPropertiesSet();
@@ -557,7 +685,8 @@ public class XMLConfigurationTest {
         assertNotNull(previousVersion);
 
         // Do a modify without any changes to trigger a save;
-        config.modifyLayer(config.getLayer(config.getLayerNames().iterator().next()).get());
+        config.modifyLayer(
+                config.getLayer(config.getLayerNames().iterator().next()).get());
 
         final String currVersion = XMLConfiguration.getCurrentSchemaVersion();
         assertNotNull(currVersion);
@@ -583,5 +712,52 @@ public class XMLConfigurationTest {
         config.getLayerCount();
         // CITE strict compliance should be activated for WMTS
         assertThat(config.isWmtsCiteCompliant(), is(true));
+    }
+
+    @Test
+    public void loadFromReadOnlyDirectory() throws GeoWebCacheException {
+        Assume.assumeTrue(
+                "Ignore if setWritable(false) does not succeed, may happen on Windows", configDir.setWritable(false));
+        assertThat(configFile.exists(), is(true));
+        try {
+            config = new XMLConfiguration(null, configDir.getAbsolutePath());
+            config.setGridSetBroker(gridSetBroker);
+            config.afterPropertiesSet();
+            assertThat(config.getLayerCount(), is(greaterThan(0)));
+        } finally {
+            configDir.setWritable(true);
+        }
+    }
+
+    @Test
+    public void loadFromEmptyReadOnlyDirectoryFails() throws GeoWebCacheException, IOException {
+        File roEmptyDir = this.temp.newFolder();
+
+        // Try to make it read-only
+        roEmptyDir.setWritable(false);
+
+        // Actively probe whether the directory is still writable (for gwc-release Docker on Windows)
+        File probe = new File(roEmptyDir, "probe");
+        boolean canWrite;
+        try {
+            canWrite = probe.createNewFile();
+            if (canWrite) {
+                probe.delete();
+            }
+        } catch (IOException e) {
+            canWrite = false;
+        }
+
+        // Skip if we can still write, this may happen on Windows
+        Assume.assumeTrue("Skipping: directory is still writable", !canWrite);
+
+        try {
+            config = new XMLConfiguration(null, roEmptyDir.getAbsolutePath());
+            config.setGridSetBroker(gridSetBroker);
+
+            assertThrows(ConfigurationException.class, () -> config.afterPropertiesSet());
+        } finally {
+            roEmptyDir.setWritable(true);
+        }
     }
 }

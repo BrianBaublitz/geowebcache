@@ -1,26 +1,24 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Arne Kepp, The Open Planning Project, Copyright 2008
  */
 package org.geowebcache.layer;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -29,7 +27,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.geowebcache.GeoWebCacheException;
 import org.geowebcache.GeoWebCacheExtensions;
@@ -48,9 +45,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.util.Assert;
 
-/**
- * Serves tile layers from the {@link TileLayerConfiguration}s available in the application context.
- */
+/** Serves tile layers from the {@link TileLayerConfiguration}s available in the application context. */
 public class TileLayerDispatcher
         implements DisposableBean,
                 InitializingBean,
@@ -68,8 +63,8 @@ public class TileLayerDispatcher
     private ApplicationContext applicationContext;
 
     /**
-     * Used for testing only, in production use {@link #TileLayerDispatcher(GridSetBroker)} instead,
-     * configurations are loaded from the application context, the {@code config} parameter will be
+     * Used for testing only, in production use {@link #TileLayerDispatcher(GridSetBroker, TileLayerDispatcherFilter)}
+     * instead, configurations are loaded from the application context, the {@code configs} parameter will be
      * overwritten
      */
     public TileLayerDispatcher(
@@ -81,8 +76,7 @@ public class TileLayerDispatcher
         this.tileLayerDispatcherFilter = tileLayerDispatcherFilter;
     }
 
-    public TileLayerDispatcher(
-            GridSetBroker gridSetBroker, TileLayerDispatcherFilter tileLayerDispatcherFilter) {
+    public TileLayerDispatcher(GridSetBroker gridSetBroker, TileLayerDispatcherFilter tileLayerDispatcherFilter) {
         this.gridSetBroker = gridSetBroker;
         this.tileLayerDispatcherFilter = tileLayerDispatcherFilter;
     }
@@ -111,13 +105,12 @@ public class TileLayerDispatcher
                 return layer.get();
             }
         }
-        throw new GeoWebCacheException(
-                "Thread "
-                        + Thread.currentThread().getName()
-                        + " Unknown layer "
-                        + layerName
-                        + ". Check the logfiles,"
-                        + " it may not have loaded properly.");
+        throw new GeoWebCacheException("Thread "
+                + Thread.currentThread().getName()
+                + " Unknown layer "
+                + layerName
+                + ". Check the logfiles,"
+                + " it may not have loaded properly.");
     }
 
     public int getLayerCount() {
@@ -139,8 +132,7 @@ public class TileLayerDispatcher
     /**
      * Returns a list of all the layers. The consumer may still have to initialize each layer!
      *
-     * <p>Modifications to the returned layer do not change the internal list of layers, but layers
-     * ARE mutable.
+     * <p>Modifications to the returned layer do not change the internal list of layers, but layers ARE mutable.
      *
      * @return a list view of this tile layer dispatcher's internal layers
      */
@@ -161,14 +153,10 @@ public class TileLayerDispatcher
      *
      * @return all layers, but filtered based on the tileLayerDispatcherFilter.
      */
-    @SuppressWarnings("unchecked")
     public Iterable<TileLayer> getLayerListFiltered() {
         Iterable<TileLayer> result = getLayerList();
         if (tileLayerDispatcherFilter != null) {
-            Stream s =
-                    StreamSupport.stream(result.spliterator(), false)
-                            .filter(x -> !tileLayerDispatcherFilter.exclude(x));
-            result = (Iterable<TileLayer>) s::iterator;
+            result = Iterables.filter(result, x -> !tileLayerDispatcherFilter.exclude(x));
         }
         return result;
     }
@@ -189,8 +177,7 @@ public class TileLayerDispatcher
     }
 
     /**
-     * Finds out which {@link TileLayerConfiguration} contains the given layer, removes it, and
-     * saves the configuration.
+     * Finds out which {@link TileLayerConfiguration} contains the given layer, removes it, and saves the configuration.
      *
      * @param layerName the name of the layer to remove
      */
@@ -208,8 +195,8 @@ public class TileLayerDispatcher
      * Adds a layer and returns the {@link TileLayerConfiguration} to which the layer was added.
      *
      * @param tl the layer to add
-     * @throws IllegalArgumentException if the given tile layer can't be added to any configuration
-     *     managed by this tile layer dispatcher.
+     * @throws IllegalArgumentException if the given tile layer can't be added to any configuration managed by this tile
+     *     layer dispatcher.
      */
     public synchronized void addLayer(final TileLayer tl) throws IllegalArgumentException {
         for (TileLayerConfiguration c : configs) {
@@ -249,20 +236,17 @@ public class TileLayerDispatcher
         return getConfiguration(tl.getName());
     }
 
-    public TileLayerConfiguration getConfiguration(final String tileLayerName)
-            throws IllegalArgumentException {
+    public TileLayerConfiguration getConfiguration(final String tileLayerName) throws IllegalArgumentException {
         Assert.notNull(tileLayerName, "tileLayerName is null");
         for (TileLayerConfiguration c : configs) {
             if (c.containsLayer(tileLayerName)) {
                 return c;
             }
         }
-        throw new IllegalArgumentException(
-                "No configuration found containing layer " + tileLayerName);
+        throw new IllegalArgumentException("No configuration found containing layer " + tileLayerName);
     }
 
-    public synchronized void addGridSet(final GridSet gridSet)
-            throws IllegalArgumentException, IOException {
+    public synchronized void addGridSet(final GridSet gridSet) throws IllegalArgumentException, IOException {
         if (null != gridSetBroker.get(gridSet.getName())) {
             throw new IllegalArgumentException("GridSet " + gridSet.getName() + " already exists");
         }
@@ -276,14 +260,13 @@ public class TileLayerDispatcher
     public synchronized void removeGridSet(String gridsetToRemove) {
         if (StreamSupport.stream(getLayerList().spliterator(), true)
                 .anyMatch(g -> Objects.nonNull(g.getGridSubset(gridsetToRemove)))) {
-            throw new IllegalStateException(
-                    "Can not remove gridset " + gridsetToRemove + " as it is used by layers");
+            throw new IllegalStateException("Can not remove gridset " + gridsetToRemove + " as it is used by layers");
         }
         gridSetBroker.removeGridSet(gridsetToRemove);
     }
 
     public synchronized void removeGridSetRecursive(String gridsetToRemove) {
-        Collection<TileLayer> deletedLayers = new LinkedList<>();
+        List<TileLayer> deletedLayers = new ArrayList<>();
         try {
             for (TileLayer tl : getLayerList()) {
                 if (Objects.nonNull(tl.getGridSubset(gridsetToRemove))) {
@@ -292,10 +275,8 @@ public class TileLayerDispatcher
                 }
             }
         } catch (NoSuchElementException e) {
-            IllegalStateException wrappedException =
-                    new IllegalStateException(
-                            "Layer was found referencing gridset but was missing during recursive delete",
-                            e);
+            IllegalStateException wrappedException = new IllegalStateException(
+                    "Layer was found referencing gridset but was missing during recursive delete", e);
             try {
                 deletedLayers.forEach(this::addLayer);
             } catch (RuntimeException exceptionOnRestore) {
@@ -322,26 +303,19 @@ public class TileLayerDispatcher
         if (clazz == TileLayerConfiguration.class) {
             return (List<? extends T>) Collections.unmodifiableList(configs);
         } else {
-            return configs.stream()
-                    .filter(clazz::isInstance)
-                    .map(clazz::cast)
-                    .collect(Collectors.toList());
+            return configs.stream().filter(clazz::isInstance).map(clazz::cast).collect(Collectors.toList());
         }
     }
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        this.configs =
-                GeoWebCacheExtensions.configurations(
-                        TileLayerConfiguration.class, applicationContext);
+        this.configs = GeoWebCacheExtensions.configurations(TileLayerConfiguration.class, applicationContext);
 
-        Map<String, BaseConfiguration> config =
-                applicationContext.getBeansOfType(BaseConfiguration.class);
+        Map<String, BaseConfiguration> config = applicationContext.getBeansOfType(BaseConfiguration.class);
         if (config != null && !config.isEmpty()) {
             for (Entry<String, BaseConfiguration> e : config.entrySet()) {
                 if (ServerConfiguration.class.isAssignableFrom(e.getValue().getClass())) {
-                    setServiceInformation(
-                            ((ServerConfiguration) e.getValue()).getServiceInformation());
+                    setServiceInformation(((ServerConfiguration) e.getValue()).getServiceInformation());
                 }
             }
         }
@@ -356,6 +330,7 @@ public class TileLayerDispatcher
     }
 
     /** @deprecated use GeoWebCacheExtensions.reinitializeConfigurations instead */
+    @Deprecated
     public void reInit() { // do not know how to get rid of it, it's used in mock testing...
         GeoWebCacheExtensions.reinitialize(this.applicationContext);
     }

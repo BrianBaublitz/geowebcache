@@ -1,14 +1,13 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author David Vick / Boundless 2017
  *     <p>Original files MemoryCacheStatsFinder.java MemoryCacheStatsResource.java
@@ -17,9 +16,9 @@ package org.geowebcache.rest.controller;
 
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.json.JsonHierarchicalStreamDriver;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.servlet.http.HttpServletRequest;
 import org.geotools.util.logging.Logging;
 import org.geowebcache.config.ContextualConfigurationProvider.Context;
 import org.geowebcache.config.XMLConfiguration;
@@ -49,7 +48,8 @@ public class MemoryCacheController {
     public static Logger log = Logging.getLogger(MemoryCacheController.class.getName());
 
     /** Store associated to the StorageBroker to use */
-    @Autowired StorageBroker broker;
+    @Autowired
+    StorageBroker broker;
 
     private WebApplicationContext context;
 
@@ -84,16 +84,14 @@ public class MemoryCacheController {
         }
 
         // Getting the BlobStore if present
-        if (broker instanceof DefaultStorageBroker) {
-            store = ((DefaultStorageBroker) broker).getBlobStore();
+        if (broker instanceof DefaultStorageBroker storageBroker) {
+            store = storageBroker.getBlobStore();
         }
 
-        if (store != null && store instanceof MemoryBlobStore) {
+        if (store != null && store instanceof MemoryBlobStore memoryStore) {
             if (log.isLoggable(Level.FINE)) {
                 log.fine("Memory Blobstore found, now getting statistics");
             }
-            // Getting statistics
-            MemoryBlobStore memoryStore = (MemoryBlobStore) store;
             CacheStatistics stats = memoryStore.getCacheStatistics();
             CacheStatistics statistics = new CacheStatistics(stats);
 
@@ -107,11 +105,9 @@ public class MemoryCacheController {
                 entity = getXmlRepresentation(statistics);
             }
         } else {
-            entity =
-                    new ResponseEntity<>(
-                            "No statistics available for the current BlobStore: "
-                                    + (store != null ? store.getClass() : null),
-                            HttpStatus.NOT_FOUND);
+            entity = new ResponseEntity<>(
+                    "No statistics available for the current BlobStore: " + (store != null ? store.getClass() : null),
+                    HttpStatus.NOT_FOUND);
         }
         return entity;
     }
@@ -122,11 +118,8 @@ public class MemoryCacheController {
      * @return a {@link ResponseEntity} object
      */
     private ResponseEntity<?> getJsonRepresentation(CacheStatistics stats) throws JSONException {
-        XStream xs =
-                XMLConfiguration.getConfiguredXStreamWithContext(
-                        new GeoWebCacheXStream(new JsonHierarchicalStreamDriver()),
-                        context,
-                        Context.REST);
+        XStream xs = XMLConfiguration.getConfiguredXStreamWithContext(
+                new GeoWebCacheXStream(new JsonHierarchicalStreamDriver()), context, Context.REST);
         JSONObject obj = new JSONObject(xs.toXML(stats));
         return new ResponseEntity<>(obj.toString(), HttpStatus.OK);
     }

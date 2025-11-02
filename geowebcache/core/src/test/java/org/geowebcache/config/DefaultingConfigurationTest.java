@@ -1,14 +1,13 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * <p>Copyright 2018
  */
@@ -33,22 +32,20 @@ import org.junit.Test;
 public class DefaultingConfigurationTest {
 
     DefaultingConfiguration config = getConfig();
-    TileLayer tl =
-            new WMSLayer(
-                    "test",
-                    new String[] {"http://example.com/"},
-                    null,
-                    Integer.toString(1),
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    false,
-                    null);
+    TileLayer tl = new WMSLayer(
+            "test",
+            new String[] {"http://example.com/"},
+            null,
+            Integer.toString(1),
+            null,
+            null,
+            null,
+            null,
+            null,
+            false,
+            null);
     GeoWebCacheConfiguration gwcConfig = new GeoWebCacheConfiguration();
-    GridSetBroker gridSetBroker =
-            new GridSetBroker(Collections.singletonList(new DefaultGridsets(true, true)));
+    GridSetBroker gridSetBroker = new GridSetBroker(Collections.singletonList(new DefaultGridsets(true, true)));
 
     @Test
     public void testUnsetConfigs() {
@@ -63,7 +60,7 @@ public class DefaultingConfigurationTest {
         boolean cacheBypass = tl.isCacheBypassAllowed();
         int timeout = tl.getBackendTimeout();
         assertFalse(cacheBypass);
-        assertEquals(timeout, 120);
+        assertEquals(120, timeout);
         assertNull(tl.getFormatModifiers());
     }
 
@@ -71,9 +68,9 @@ public class DefaultingConfigurationTest {
     public void initializationTest() {
         initialize(tl);
         Set<String> subsets = tl.getGridSubsets();
-        assertEquals(subsets.size(), 2);
-        assertEquals(subsets.toArray()[0], "EPSG:4326");
-        assertEquals(subsets.toArray()[1], "EPSG:900913");
+        assertEquals(2, subsets.size());
+        assertEquals("EPSG:4326", subsets.toArray()[0]);
+        assertEquals("EPSG:900913", subsets.toArray()[1]);
     }
 
     GeoWebCacheConfiguration getGwcConfig() {
@@ -106,8 +103,7 @@ public class DefaultingConfigurationTest {
                     }
                 }
 
-                if (layer instanceof WMSLayer) {
-                    WMSLayer wl = (WMSLayer) layer;
+                if (layer instanceof WMSLayer wl) {
 
                     URL proxyUrl = null;
                     try {
@@ -122,15 +118,10 @@ public class DefaultingConfigurationTest {
                     final WMSHttpHelper sourceHelper;
 
                     if (wl.getHttpUsername() != null) {
-                        sourceHelper =
-                                new WMSHttpHelper(
-                                        wl.getHttpUsername(), wl.getHttpPassword(), proxyUrl);
+                        sourceHelper = new WMSHttpHelper(wl.getHttpUsername(), wl.getHttpPassword(), proxyUrl);
                     } else if (getGwcConfig().getHttpUsername() != null) {
-                        sourceHelper =
-                                new WMSHttpHelper(
-                                        getGwcConfig().getHttpUsername(),
-                                        getGwcConfig().getHttpPassword(),
-                                        proxyUrl);
+                        sourceHelper = new WMSHttpHelper(
+                                getGwcConfig().getHttpUsername(), getGwcConfig().getHttpPassword(), proxyUrl);
                     } else {
                         sourceHelper = new WMSHttpHelper(null, null, proxyUrl);
                     }

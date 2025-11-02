@@ -1,19 +1,19 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Gabriel Roldan, Boundless Spatial Inc, Copyright 2015
  */
 package org.geowebcache.s3;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.Objects.isNull;
 
@@ -22,18 +22,12 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.BucketPolicy;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.DeleteObjectsRequest;
-import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion;
 import com.amazonaws.services.s3.model.Grant;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.google.common.base.Function;
-import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -42,7 +36,6 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -51,7 +44,10 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.annotation.Nullable;
 import org.geotools.util.logging.Logging;
 import org.geowebcache.GeoWebCacheException;
@@ -62,6 +58,7 @@ import org.geowebcache.layer.TileLayerDispatcher;
 import org.geowebcache.locks.LockProvider;
 import org.geowebcache.mime.MimeException;
 import org.geowebcache.mime.MimeType;
+import org.geowebcache.s3.streams.TileDeletionListenerNotifier;
 import org.geowebcache.storage.BlobStore;
 import org.geowebcache.storage.BlobStoreListener;
 import org.geowebcache.storage.BlobStoreListenerList;
@@ -69,7 +66,6 @@ import org.geowebcache.storage.CompositeBlobStore;
 import org.geowebcache.storage.StorageException;
 import org.geowebcache.storage.TileObject;
 import org.geowebcache.storage.TileRange;
-import org.geowebcache.storage.TileRangeIterator;
 import org.geowebcache.util.TMSKeyBuilder;
 
 public class S3BlobStore implements BlobStore {
@@ -84,14 +80,11 @@ public class S3BlobStore implements BlobStore {
 
     private String bucketName;
 
-    private volatile boolean shutDown;
-
     private final S3Ops s3Ops;
 
     private CannedAccessControlList acl;
 
-    public S3BlobStore(
-            S3BlobStoreInfo config, TileLayerDispatcher layers, LockProvider lockProvider)
+    public S3BlobStore(S3BlobStoreInfo config, TileLayerDispatcher layers, LockProvider lockProvider)
             throws StorageException {
         checkNotNull(config);
         checkNotNull(layers);
@@ -102,7 +95,7 @@ public class S3BlobStore implements BlobStore {
         conn = validateClient(config.buildClient(), bucketName);
         acl = config.getAccessControlList();
 
-        this.s3Ops = new S3Ops(conn, bucketName, keyBuilder, lockProvider);
+        this.s3Ops = new S3Ops(conn, bucketName, keyBuilder, lockProvider, listeners);
 
         boolean empty = !s3Ops.prefixExists(prefix);
         boolean existing = Objects.nonNull(s3Ops.getObjectMetadata(keyBuilder.storeMetadata()));
@@ -115,13 +108,11 @@ public class S3BlobStore implements BlobStore {
     }
 
     /**
-     * Validates the client connection by running some {@link S3ClientChecker}, returns the valiated
-     * client on success, otherwise throws an exception
+     * Validates the client connection by running some {@link S3ClientChecker}, returns the valiated client on success,
+     * otherwise throws an exception
      */
-    protected AmazonS3Client validateClient(AmazonS3Client client, String bucketName)
-            throws StorageException {
-        List<S3ClientChecker> connectionCheckers =
-                Arrays.asList(this::checkBucketPolicy, this::checkAccessControlList);
+    protected AmazonS3Client validateClient(AmazonS3Client client, String bucketName) throws StorageException {
+        List<S3ClientChecker> connectionCheckers = Arrays.asList(this::checkBucketPolicy, this::checkAccessControlList);
         List<Exception> exceptions = new ArrayList<>();
         for (S3ClientChecker checker : connectionCheckers) {
             try {
@@ -132,11 +123,9 @@ public class S3BlobStore implements BlobStore {
             }
         }
         if (exceptions.size() == connectionCheckers.size()) {
-            String messages =
-                    exceptions.stream().map(e -> e.getMessage()).collect(Collectors.joining("\n"));
+            String messages = exceptions.stream().map(e -> e.getMessage()).collect(Collectors.joining("\n"));
             throw new StorageException(
-                    "Could not validate the connection to S3, exceptions gathered during checks:\n "
-                            + messages);
+                    "Could not validate the connection to S3, exceptions gathered during checks:\n " + messages);
         }
 
         return client;
@@ -148,8 +137,8 @@ public class S3BlobStore implements BlobStore {
     }
 
     /**
-     * Checks a {@link com.amazonaws.services.s3.AmazonS3Client} by getting the ACL out of the
-     * bucket, as implemented by S3, Cohesity, but not, for example, by Minio.
+     * Checks a {@link com.amazonaws.services.s3.AmazonS3Client} by getting the ACL out of the bucket, as implemented by
+     * S3, Cohesity, but not, for example, by Minio.
      */
     private void checkAccessControlList(AmazonS3Client client, String bucketName) throws Exception {
         try {
@@ -163,8 +152,8 @@ public class S3BlobStore implements BlobStore {
     }
 
     /**
-     * Checks a {@link com.amazonaws.services.s3.AmazonS3Client} by getting the policy out of the
-     * bucket, as implemented by S3, Minio, but not, for example, by Cohesity.
+     * Checks a {@link com.amazonaws.services.s3.AmazonS3Client} by getting the policy out of the bucket, as implemented
+     * by S3, Minio, but not, for example, by Cohesity.
      */
     private void checkBucketPolicy(AmazonS3Client client, String bucketName) throws Exception {
         try {
@@ -172,14 +161,12 @@ public class S3BlobStore implements BlobStore {
             BucketPolicy bucketPol = client.getBucketPolicy(bucketName);
             log.fine("Bucket " + bucketName + " policy: " + bucketPol.getPolicyText());
         } catch (AmazonServiceException se) {
-            throw new StorageException(
-                    "Server error getting bucket policy: " + se.getMessage(), se);
+            throw new StorageException("Server error getting bucket policy: " + se.getMessage(), se);
         }
     }
 
     @Override
     public void destroy() {
-        this.shutDown = true;
         AmazonS3Client conn = this.conn;
         this.conn = null;
         if (conn != null) {
@@ -252,8 +239,8 @@ public class S3BlobStore implements BlobStore {
 
     private ByteArrayInputStream toByteArray(final Resource blob) throws StorageException {
         final byte[] bytes;
-        if (blob instanceof ByteArrayResource) {
-            bytes = ((ByteArrayResource) blob).getContents();
+        if (blob instanceof ByteArrayResource resource) {
+            bytes = resource.getContents();
         } else {
             try (ByteArrayOutputStream out = new ByteArrayOutputStream((int) blob.getSize());
                     WritableByteChannel channel = Channels.newChannel(out)) {
@@ -286,84 +273,40 @@ public class S3BlobStore implements BlobStore {
         return true;
     }
 
-    private class TileToKey implements Function<long[], KeyVersion> {
-
-        private final String coordsPrefix;
-
-        private final String extension;
-
-        public TileToKey(String coordsPrefix, MimeType mimeType) {
-            this.coordsPrefix = coordsPrefix;
-            this.extension = mimeType.getInternalName();
-        }
-
-        @Override
-        public KeyVersion apply(long[] loc) {
-            long z = loc[2];
-            long x = loc[0];
-            long y = loc[1];
-            StringBuilder sb = new StringBuilder(coordsPrefix);
-            sb.append(z).append('/').append(x).append('/').append(y).append('.').append(extension);
-            return new KeyVersion(sb.toString());
-        }
-    }
-
     @Override
     public boolean delete(final TileRange tileRange) throws StorageException {
+        checkNotNull(tileRange, "tile range must not be null");
+        checkArgument(tileRange.getZoomStart() >= 0, "zoom start must be greater or equal than zero");
+        checkArgument(
+                tileRange.getZoomStop() >= tileRange.getZoomStart(),
+                "zoom stop must be greater or equal than start zoom");
 
         final String coordsPrefix = keyBuilder.coordinatesPrefix(tileRange, true);
         if (!s3Ops.prefixExists(coordsPrefix)) {
             return false;
         }
 
-        final Iterator<long[]> tileLocations =
-                new AbstractIterator<long[]>() {
+        // Create a prefix for each zoom level
+        long count = IntStream.range(tileRange.getZoomStart(), tileRange.getZoomStop() + 1)
+                .mapToObj(level -> scheduleDeleteForZoomLevel(tileRange, level))
+                .filter(Objects::nonNull)
+                .count();
 
-                    // TileRange iterator with 1x1 meta tiling factor
-                    private TileRangeIterator trIter =
-                            new TileRangeIterator(tileRange, new int[] {1, 1});
+        // Check all ranges where scheduled
+        return count == (tileRange.getZoomStop() - tileRange.getZoomStart() + 1);
+    }
 
-                    @Override
-                    protected long[] computeNext() {
-                        long[] gridLoc = trIter.nextMetaGridLocation(new long[3]);
-                        return gridLoc == null ? endOfData() : gridLoc;
-                    }
-                };
-
-        if (listeners.isEmpty()) {
-            // if there are no listeners, don't bother requesting every tile
-            // metadata to notify the listeners
-            Iterator<List<long[]>> partition = Iterators.partition(tileLocations, 1000);
-            final TileToKey tileToKey = new TileToKey(coordsPrefix, tileRange.getMimeType());
-
-            while (partition.hasNext() && !shutDown) {
-                List<long[]> locations = partition.next();
-                List<KeyVersion> keys = Lists.transform(locations, tileToKey);
-
-                DeleteObjectsRequest req = new DeleteObjectsRequest(bucketName);
-                req.setQuiet(true);
-                req.setKeys(keys);
-                conn.deleteObjects(req);
-            }
-
-        } else {
-            long[] xyz;
-            String layerName = tileRange.getLayerName();
-            String gridSetId = tileRange.getGridSetId();
-            String format = tileRange.getMimeType().getFormat();
-            Map<String, String> parameters = tileRange.getParameters();
-
-            while (tileLocations.hasNext()) {
-                xyz = tileLocations.next();
-                TileObject tile =
-                        TileObject.createQueryTileObject(
-                                layerName, xyz, gridSetId, format, parameters);
-                tile.setParametersId(tileRange.getParametersId());
-                delete(tile);
-            }
+    private String scheduleDeleteForZoomLevel(TileRange tileRange, int level) {
+        String zoomPath = keyBuilder.forZoomLevel(tileRange, level);
+        Bounds bounds = new Bounds(tileRange.rangeBounds(level));
+        String prefix = "%s?%s".formatted(zoomPath, bounds);
+        try {
+            s3Ops.scheduleAsyncDelete(prefix);
+            return prefix;
+        } catch (GeoWebCacheException e) {
+            log.warning("Cannot schedule delete for prefix " + prefix);
+            return null;
         }
-
-        return true;
     }
 
     @Override
@@ -388,8 +331,7 @@ public class S3BlobStore implements BlobStore {
     }
 
     @Override
-    public boolean deleteByGridsetId(final String layerName, final String gridSetId)
-            throws StorageException {
+    public boolean deleteByGridsetId(final String layerName, final String gridSetId) throws StorageException {
 
         checkNotNull(layerName, "layerName");
         checkNotNull(gridSetId, "gridSetId");
@@ -468,10 +410,8 @@ public class S3BlobStore implements BlobStore {
         return s3Ops.getProperties(key);
     }
 
-    private void putParametersMetadata(
-            String layerName, String parametersId, Map<String, String> parameters) {
-        assert (isNull(parametersId) == isNull(parameters));
-        if (isNull(parametersId)) {
+    private void putParametersMetadata(String layerName, String parametersId, Map<String, String> parameters) {
+        if (isNull(parameters)) {
             return;
         }
         Properties properties = new Properties();
@@ -492,24 +432,21 @@ public class S3BlobStore implements BlobStore {
     }
 
     @Override
-    public boolean deleteByParametersId(String layerName, String parametersId)
-            throws StorageException {
+    public boolean deleteByParametersId(String layerName, String parametersId) throws StorageException {
         checkNotNull(layerName, "layerName");
         checkNotNull(parametersId, "parametersId");
 
-        boolean prefixExists =
-                keyBuilder.forParameters(layerName, parametersId).stream()
-                        .map(
-                                prefix -> {
-                                    try {
-                                        return s3Ops.scheduleAsyncDelete(prefix);
-                                    } catch (RuntimeException | GeoWebCacheException e) {
-                                        throw new RuntimeException(e);
-                                    }
-                                })
-                        .reduce(Boolean::logicalOr) // Don't use Stream.anyMatch as it would short
-                        // circuit
-                        .orElse(false);
+        boolean prefixExists = keyBuilder.forParameters(layerName, parametersId).stream()
+                .map(prefix -> {
+                    try {
+                        return s3Ops.scheduleAsyncDelete(prefix);
+                    } catch (RuntimeException | GeoWebCacheException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .reduce(Boolean::logicalOr) // Don't use Stream.anyMatch as it would short
+                // circuit
+                .orElse(false);
         if (prefixExists) {
             listeners.sendParametersDeleted(layerName, parametersId);
         }
@@ -534,5 +471,64 @@ public class S3BlobStore implements BlobStore {
                 .map(s3Ops::getProperties)
                 .map(props -> (Map<String, String>) (Map<?, ?>) props)
                 .collect(Collectors.toMap(ParametersUtils::getId, Optional::of));
+    }
+
+    public static class Bounds {
+        private static final Pattern boundsRegex =
+                Pattern.compile("^(?<prefix>.*/)\\?bounds=(?<minx>\\d+),(?<miny>\\d+),(?<maxx>\\d+),(?<maxy>\\d+)$");
+        private final long minX, minY, maxX, maxY;
+
+        public Bounds(long[] bound) {
+            minX = Math.min(bound[0], bound[2]);
+            minY = Math.min(bound[1], bound[3]);
+            maxX = Math.max(bound[0], bound[2]);
+            maxY = Math.max(bound[1], bound[3]);
+        }
+
+        public long getMinX() {
+            return minX;
+        }
+
+        public long getMaxX() {
+            return maxX;
+        }
+
+        static Optional<Bounds> createBounds(String prefix) {
+            Matcher matcher = boundsRegex.matcher(prefix);
+            if (!matcher.matches()) {
+                return Optional.empty();
+            }
+
+            Bounds bounds = new Bounds(new long[] {
+                Long.parseLong(matcher.group("minx")),
+                Long.parseLong(matcher.group("miny")),
+                Long.parseLong(matcher.group("maxx")),
+                Long.parseLong(matcher.group("maxy"))
+            });
+            return Optional.of(bounds);
+        }
+
+        static String prefixWithoutBounds(String prefix) {
+            Matcher matcher = boundsRegex.matcher(prefix);
+            if (matcher.matches()) {
+                return matcher.group("prefix");
+            }
+            return prefix;
+        }
+
+        @Override
+        public String toString() {
+            return "bounds=%d,%d,%d,%d".formatted(minX, minY, maxX, maxY);
+        }
+
+        public boolean predicate(S3ObjectSummary s3ObjectSummary) {
+            var matcher = TileDeletionListenerNotifier.keyRegex.matcher(s3ObjectSummary.getKey());
+            if (!matcher.matches()) {
+                return false;
+            }
+            long x = Long.parseLong(matcher.group(TileDeletionListenerNotifier.X_GROUP_POS));
+            long y = Long.parseLong(matcher.group(TileDeletionListenerNotifier.Y_GROUP_POS));
+            return x >= minX && x <= maxX && y >= minY && y <= maxY;
+        }
     }
 }

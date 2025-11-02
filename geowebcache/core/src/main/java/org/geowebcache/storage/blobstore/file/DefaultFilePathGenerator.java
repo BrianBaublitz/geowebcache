@@ -1,14 +1,13 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Arne Kepp, The Open Planning Project, Copyright 2008
  */
@@ -62,7 +61,7 @@ public class DefaultFilePathGenerator implements FilePathGenerator {
         StringBuilder path = new StringBuilder(256);
 
         long shift = z / 2;
-        long half = 2 << shift;
+        long half = 2L << shift;
         int digits = 1;
         if (half > 10) {
             digits = (int) (Math.log10(half)) + 1;
@@ -104,8 +103,7 @@ public class DefaultFilePathGenerator implements FilePathGenerator {
     }
 
     @Override
-    public void visitRange(File layerDirectory, TileRange range, TileFileVisitor visitor)
-            throws StorageException {
+    public void visitRange(File layerDirectory, TileRange range, TileFileVisitor visitor) throws StorageException {
         final FilenameFilter tileFinder = new DefaultFilePathFilter(range);
         File[] srsZoomDirs = listFilesNullSafe(layerDirectory, tileFinder);
 

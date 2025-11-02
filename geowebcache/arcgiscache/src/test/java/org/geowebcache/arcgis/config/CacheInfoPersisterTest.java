@@ -13,23 +13,22 @@ public class CacheInfoPersisterTest {
 
     @Test
     public void testLoadSpatialReference() {
-        String spatialRef =
-                "<SpatialReference xsi:type='typens:ProjectedCoordinateSystem'>" //
-                        + "  <WKT>PROJCS[&quot;NZGD_2000_New_Zealand_Transverse_Mercator&quot;,GEOGCS[&quot;GCS_NZGD_2000&quot;,DATUM[&quot;D_NZGD_2000&quot;,SPHEROID[&quot;GRS_1980&quot;,6378137.0,298.257222101]],PRIMEM[&quot;Greenwich&quot;,0.0],UNIT[&quot;Degree&quot;,0.0174532925199433]],PROJECTION[&quot;Transverse_Mercator&quot;],PARAMETER[&quot;False_Easting&quot;,1600000.0],PARAMETER[&quot;False_Northing&quot;,10000000.0],PARAMETER[&quot;Central_Meridian&quot;,173.0],PARAMETER[&quot;Scale_Factor&quot;,0.9996],PARAMETER[&quot;Latitude_Of_Origin&quot;,0.0],UNIT[&quot;Meter&quot;,1.0],AUTHORITY[&quot;EPSG&quot;,2193]]</WKT>" //
-                        + "  <XOrigin>-4020900</XOrigin>" //
-                        + "  <YOrigin>1900</YOrigin>" //
-                        + "  <XYScale>450445547.3910538</XYScale>" //
-                        + "  <ZOrigin>0.5</ZOrigin>" //
-                        + "  <ZScale>1</ZScale>" //
-                        + "  <MOrigin>-100000</MOrigin>" //
-                        + "  <MScale>10000</MScale>" //
-                        + "  <XYTolerance>0.0037383177570093459</XYTolerance>" //
-                        + "  <ZTolerance>2</ZTolerance>" //
-                        + "  <MTolerance>2</MTolerance>" //
-                        + "  <HighPrecision>true</HighPrecision>" //
-                        + "  <WKID>2193</WKID>" //
-                        + "  <LatestWKID>2193</LatestWKID>" //
-                        + "</SpatialReference>";
+        String spatialRef = "<SpatialReference xsi:type='typens:ProjectedCoordinateSystem'>" //
+                + "  <WKT>PROJCS[&quot;NZGD_2000_New_Zealand_Transverse_Mercator&quot;,GEOGCS[&quot;GCS_NZGD_2000&quot;,DATUM[&quot;D_NZGD_2000&quot;,SPHEROID[&quot;GRS_1980&quot;,6378137.0,298.257222101]],PRIMEM[&quot;Greenwich&quot;,0.0],UNIT[&quot;Degree&quot;,0.0174532925199433]],PROJECTION[&quot;Transverse_Mercator&quot;],PARAMETER[&quot;False_Easting&quot;,1600000.0],PARAMETER[&quot;False_Northing&quot;,10000000.0],PARAMETER[&quot;Central_Meridian&quot;,173.0],PARAMETER[&quot;Scale_Factor&quot;,0.9996],PARAMETER[&quot;Latitude_Of_Origin&quot;,0.0],UNIT[&quot;Meter&quot;,1.0],AUTHORITY[&quot;EPSG&quot;,2193]]</WKT>" //
+                + "  <XOrigin>-4020900</XOrigin>" //
+                + "  <YOrigin>1900</YOrigin>" //
+                + "  <XYScale>450445547.3910538</XYScale>" //
+                + "  <ZOrigin>0.5</ZOrigin>" //
+                + "  <ZScale>1</ZScale>" //
+                + "  <MOrigin>-100000</MOrigin>" //
+                + "  <MScale>10000</MScale>" //
+                + "  <XYTolerance>0.0037383177570093459</XYTolerance>" //
+                + "  <ZTolerance>2</ZTolerance>" //
+                + "  <MTolerance>2</MTolerance>" //
+                + "  <HighPrecision>true</HighPrecision>" //
+                + "  <WKID>2193</WKID>" //
+                + "  <LatestWKID>2193</LatestWKID>" //
+                + "</SpatialReference>";
 
         CacheInfoPersister persister = new CacheInfoPersister();
         XStream xs = persister.getConfiguredXStream();
@@ -45,7 +44,7 @@ public class CacheInfoPersisterTest {
         Assert.assertEquals(0.5, sr.getZOrigin(), 1e-6);
         Assert.assertEquals(1, sr.getZScale(), 1e-6);
         Assert.assertEquals(10000, sr.getMScale(), 1e-6);
-        Assert.assertEquals(0.0037383177570093459, sr.getXYTolerance(), 1e-6);
+        Assert.assertEquals(0.003738317757009346, sr.getXYTolerance(), 1e-6);
         Assert.assertEquals(2, sr.getZTolerance(), 1e-6);
         Assert.assertEquals(2, sr.getMTolerance(), 1e-6);
         Assert.assertTrue(sr.isHighPrecision());
@@ -55,11 +54,10 @@ public class CacheInfoPersisterTest {
 
     @Test
     public void testLoadTileOrigin() {
-        String tileOrigin =
-                "<TileOrigin xsi:type='typens:PointN'>" //
-                        + "  <X>-4020900</X>" //
-                        + "  <Y>19998100</Y>" //
-                        + "</TileOrigin>";
+        String tileOrigin = "<TileOrigin xsi:type='typens:PointN'>" //
+                + "  <X>-4020900</X>" //
+                + "  <Y>19998100</Y>" //
+                + "</TileOrigin>";
         CacheInfoPersister persister = new CacheInfoPersister();
         XStream xs = persister.getConfiguredXStream();
         TileOrigin to = (TileOrigin) xs.fromXML(new StringReader(tileOrigin));
@@ -70,23 +68,22 @@ public class CacheInfoPersisterTest {
 
     @Test
     public void testLoadTileCacheInfo() {
-        String tileCacheInfo =
-                "<TileCacheInfo xsi:type='typens:TileCacheInfo'>" //
-                        + "  <SpatialReference xsi:type='typens:ProjectedCoordinateSystem'>" //
-                        + "  </SpatialReference>" //
-                        + "  <TileOrigin xsi:type='typens:PointN'>" //
-                        + "  <X>-4020900</X>" //
-                        + "  <Y>19998100</Y>" //
-                        + "  </TileOrigin>" //
-                        + "  <TileCols>512</TileCols>" //
-                        + "  <TileRows>512</TileRows>" //
-                        + "  <DPI>96</DPI>" //
-                        + "  <PreciseDPI>96</PreciseDPI>" //
-                        + "  <LODInfos xsi:type='typens:ArrayOfLODInfo'>" //
-                        + "    <LODInfo xsi:type='typens:LODInfo'>" //
-                        + "    </LODInfo>" //
-                        + "  </LODInfos>" //
-                        + "</TileCacheInfo>";
+        String tileCacheInfo = "<TileCacheInfo xsi:type='typens:TileCacheInfo'>" //
+                + "  <SpatialReference xsi:type='typens:ProjectedCoordinateSystem'>" //
+                + "  </SpatialReference>" //
+                + "  <TileOrigin xsi:type='typens:PointN'>" //
+                + "  <X>-4020900</X>" //
+                + "  <Y>19998100</Y>" //
+                + "  </TileOrigin>" //
+                + "  <TileCols>512</TileCols>" //
+                + "  <TileRows>512</TileRows>" //
+                + "  <DPI>96</DPI>" //
+                + "  <PreciseDPI>96</PreciseDPI>" //
+                + "  <LODInfos xsi:type='typens:ArrayOfLODInfo'>" //
+                + "    <LODInfo xsi:type='typens:LODInfo'>" //
+                + "    </LODInfo>" //
+                + "  </LODInfos>" //
+                + "</TileCacheInfo>";
 
         CacheInfoPersister persister = new CacheInfoPersister();
         XStream xs = persister.getConfiguredXStream();
@@ -104,12 +101,11 @@ public class CacheInfoPersisterTest {
 
     @Test
     public void testLoadLODInfo() {
-        String lodInfo =
-                "<LODInfo xsi:type='typens:LODInfo'>" //
-                        + "  <LevelID>10</LevelID>" //
-                        + "  <Scale>6000000</Scale>" //
-                        + "  <Resolution>1587.5031750063501</Resolution>" //
-                        + "</LODInfo>";
+        String lodInfo = "<LODInfo xsi:type='typens:LODInfo'>" //
+                + "  <LevelID>10</LevelID>" //
+                + "  <Scale>6000000</Scale>" //
+                + "  <Resolution>1587.5031750063501</Resolution>" //
+                + "</LODInfo>";
 
         CacheInfoPersister persister = new CacheInfoPersister();
         XStream xs = persister.getConfiguredXStream();
@@ -122,21 +118,20 @@ public class CacheInfoPersisterTest {
 
     @Test
     public void testLoadTileImageInfo() {
-        String tileImageInfo =
-                "<TileImageInfo xsi:type='typens:TileImageInfo'>" //
-                        + "  <CacheTileFormat>JPEG</CacheTileFormat>" //
-                        + "  <CompressionQuality>80</CompressionQuality>" //
-                        + "  <Antialiasing>true</Antialiasing>" //
-                        + "  <BandCount>1</BandCount>" //
-                        + "  <LERCError>0</LERCError>" //
-                        + "</TileImageInfo>";
+        String tileImageInfo = "<TileImageInfo xsi:type='typens:TileImageInfo'>" //
+                + "  <CacheTileFormat>JPEG</CacheTileFormat>" //
+                + "  <CompressionQuality>80</CompressionQuality>" //
+                + "  <Antialiasing>true</Antialiasing>" //
+                + "  <BandCount>1</BandCount>" //
+                + "  <LERCError>0</LERCError>" //
+                + "</TileImageInfo>";
 
         CacheInfoPersister persister = new CacheInfoPersister();
         XStream xs = persister.getConfiguredXStream();
         TileImageInfo tii = (TileImageInfo) xs.fromXML(new StringReader(tileImageInfo));
         Assert.assertNotNull(tii);
         Assert.assertEquals("JPEG", tii.getCacheTileFormat());
-        Assert.assertEquals(80f, tii.getCompressionQuality(), 1e-6f);
+        Assert.assertEquals(80f, tii.getCompressionQuality(), 0);
         Assert.assertTrue(tii.isAntialiasing());
         Assert.assertEquals(1, tii.getBandCount());
         Assert.assertEquals(0.0f, tii.getLERCError(), 0d);
@@ -144,11 +139,10 @@ public class CacheInfoPersisterTest {
 
     @Test
     public void testLoadCacheStorageInfo() {
-        String cacheStorageInfo =
-                "<CacheStorageInfo xsi:type='typens:CacheStorageInfo'>" //
-                        + "  <StorageFormat>esriMapCacheStorageModeExploded</StorageFormat>" //
-                        + "  <PacketSize>10</PacketSize>" //
-                        + "</CacheStorageInfo>";
+        String cacheStorageInfo = "<CacheStorageInfo xsi:type='typens:CacheStorageInfo'>" //
+                + "  <StorageFormat>esriMapCacheStorageModeExploded</StorageFormat>" //
+                + "  <PacketSize>10</PacketSize>" //
+                + "</CacheStorageInfo>";
 
         CacheInfoPersister persister = new CacheInfoPersister();
         XStream xs = persister.getConfiguredXStream();

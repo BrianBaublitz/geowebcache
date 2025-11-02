@@ -1,14 +1,13 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Marius Suta / The Open Planning Project 2008
  * @author Arne Kepp / The Open Planning Project 2009
@@ -19,6 +18,8 @@ package org.geowebcache.rest.controller;
 
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.xml.DomDriver;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URLDecoder;
@@ -27,8 +28,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.IOUtils;
 import org.geotools.util.logging.Logging;
 import org.geowebcache.GeoWebCacheException;
@@ -58,9 +57,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class MassTruncateController extends GWCSeedingController {
     private static Logger log = Logging.getLogger(MassTruncateController.class.getName());
 
-    @Autowired private StorageBroker broker;
+    @Autowired
+    private StorageBroker broker;
 
-    @Autowired private TileBreeder breeder;
+    @Autowired
+    private TileBreeder breeder;
 
     @Autowired
     public MassTruncateController(ApplicationContextProvider appCtx) {
@@ -69,7 +70,7 @@ public class MassTruncateController extends GWCSeedingController {
 
     @ExceptionHandler(RestException.class)
     public ResponseEntity<?> handleRestException(RestException ex) {
-        return new ResponseEntity<Object>(ex.toString(), ex.getStatus());
+        return new ResponseEntity<>(ex.toString(), ex.getStatus());
     }
 
     public void setStorageBroker(StorageBroker broker) {
@@ -113,7 +114,7 @@ public class MassTruncateController extends GWCSeedingController {
         }
 
         sb.append("</massTruncateRequests>");
-        return new ResponseEntity<Object>(sb.toString(), HttpStatus.OK);
+        return new ResponseEntity<>(sb.toString(), HttpStatus.OK);
     }
 
     /** Issue a mass truncate request. */
@@ -137,8 +138,7 @@ public class MassTruncateController extends GWCSeedingController {
             obj = xs.fromXML(URLDecoder.decode(reqData, Charset.defaultCharset().name()));
         } else {
             throw new RestException(
-                    "Format extension unknown or not specified: " + contentType,
-                    HttpStatus.BAD_REQUEST);
+                    "Format extension unknown or not specified: " + contentType, HttpStatus.BAD_REQUEST);
         }
 
         MassTruncateRequest mtr = (MassTruncateRequest) obj;

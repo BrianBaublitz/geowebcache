@@ -1,14 +1,13 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  */
 package org.geowebcache.jetty;
 
@@ -20,13 +19,13 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.geotools.util.logging.Logging;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.Description;
@@ -130,8 +129,7 @@ public class JettyRule extends org.junit.rules.ExternalResource {
         try {
             HttpConfiguration httpConfiguration = new HttpConfiguration();
 
-            ServerConnector http =
-                    new ServerConnector(jettyServer, new HttpConnectionFactory(httpConfiguration));
+            ServerConnector http = new ServerConnector(jettyServer, new HttpConnectionFactory(httpConfiguration));
             http.setPort(port);
             http.setAcceptQueueSize(100);
             http.setIdleTimeout(1000 * 60 * 60);

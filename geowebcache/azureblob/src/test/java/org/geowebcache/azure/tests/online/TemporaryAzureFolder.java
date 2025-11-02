@@ -1,33 +1,33 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Andrea Aime, GeoSolutions, Copyright 2019
  */
-package org.geowebcache.azure;
+package org.geowebcache.azure.tests.online;
 
 import static com.google.common.base.Preconditions.checkState;
 import static org.junit.Assert.assertTrue;
 
-import com.microsoft.azure.storage.blob.BlockBlobURL;
-import com.microsoft.azure.storage.blob.models.BlobItem;
-import java.util.List;
+import com.azure.storage.blob.models.BlobItem;
+import com.azure.storage.blob.specialized.BlockBlobClient;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.stream.Stream;
+import org.geowebcache.azure.AzureBlobStoreData;
+import org.geowebcache.azure.AzureClient;
 import org.junit.rules.ExternalResource;
-import org.springframework.http.HttpStatus;
 
 /**
- * The TemporaryAzureFolder provides a path prefix for Azure storage and deletes all resources under
- * the given prefix at shutdown.
+ * The TemporaryAzureFolder provides a path prefix for Azure storage and deletes all resources under the given prefix at
+ * shutdown.
  */
 public class TemporaryAzureFolder extends ExternalResource {
 
@@ -60,7 +60,6 @@ public class TemporaryAzureFolder extends ExternalResource {
     }
 
     @Override
-    @SuppressWarnings("PMD.UseTryWithResources") // client is a field, not created here
     protected void after() {
         if (!isConfigured()) {
             return;
@@ -69,7 +68,6 @@ public class TemporaryAzureFolder extends ExternalResource {
             delete();
         } finally {
             temporaryPrefix = null;
-            client.close();
         }
     }
 
@@ -115,13 +113,11 @@ public class TemporaryAzureFolder extends ExternalResource {
             return;
         }
 
-        List<BlobItem> blobs = client.listBlobs(temporaryPrefix, Integer.MAX_VALUE);
-        for (BlobItem blob : blobs) {
-            BlockBlobURL blockBlobURL = client.getBlockBlobURL(blob.name());
-            int status = blockBlobURL.delete().blockingGet().statusCode();
-            assertTrue(
-                    "Expected success but got " + status + " while deleting " + blob.name(),
-                    HttpStatus.valueOf(status).is2xxSuccessful());
+        try (Stream<BlobItem> blobs = client.listBlobs(temporaryPrefix)) {
+            blobs.forEach(blob -> {
+                BlockBlobClient blockBlobURL = client.getBlockBlobClient(blob.getName());
+                assertTrue("Expected success while deleting " + blob.getName(), blockBlobURL.deleteIfExists());
+            });
         }
     }
 

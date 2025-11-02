@@ -1,19 +1,19 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Arne Kepp, OpenGeo, Copyright 2009
  */
 package org.geowebcache.filter.request;
 
+import java.io.Serial;
 import org.geowebcache.GeoWebCacheException;
 import org.geowebcache.conveyor.ConveyorTile;
 import org.geowebcache.grid.GridSubset;
@@ -28,6 +28,7 @@ import org.geowebcache.layer.TileLayer;
  */
 public class CircularExtentFilter extends RequestFilter {
 
+    @Serial
     private static final long serialVersionUID = -8488899568092162423L;
 
     CircularExtentFilter() {}
@@ -74,14 +75,12 @@ public class CircularExtentFilter extends RequestFilter {
     }
 
     @Override
-    public void update(TileLayer layer, String gridSetId, int zoomStart, int zoomStop)
-            throws GeoWebCacheException {
+    public void update(TileLayer layer, String gridSetId, int zoomStart, int zoomStop) throws GeoWebCacheException {
         // Do nothing
     }
 
     @Override
-    public void update(byte[] filterData, TileLayer layer, String gridSetId, int z)
-            throws GeoWebCacheException {
+    public void update(byte[] filterData, TileLayer layer, String gridSetId, int z) throws GeoWebCacheException {
         // Do nothing
     }
 

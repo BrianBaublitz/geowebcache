@@ -19,7 +19,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.google.common.base.Ticker;
 import java.io.InputStream;
@@ -55,7 +55,7 @@ public class TransientCacheTest {
         Resource result = transCache.get("foo");
         assertThat(result, notNullValue());
         assertThat(r.getLastModified(), equalTo(r.getLastModified()));
-        try (InputStream is = result.getInputStream(); ) {
+        try (InputStream is = result.getInputStream()) {
             assertThat(is.read(), equalTo(1));
             assertThat(is.read(), equalTo(2));
             assertThat(is.read(), equalTo(3));
@@ -93,20 +93,15 @@ public class TransientCacheTest {
     public void testRemoveWhenMaxTiles() throws Exception {
 
         for (byte i = 0; i < MAX_TILES; i++) {
-            Resource r =
-                    new ByteArrayResource(
-                            new byte[] {(byte) (i + 1), (byte) (i + 2), (byte) (i + 3)});
+            Resource r = new ByteArrayResource(new byte[] {(byte) (i + 1), (byte) (i + 2), (byte) (i + 3)});
             transCache.put("foo" + i, r);
             assertThat(transCache.size(), is(i + 1));
         }
         assertThat(transCache.storageSize(), is((long) MAX_TILES * 3));
-        Resource r =
-                new ByteArrayResource(new byte[] {(byte) (MAX_TILES + 1), (byte) (MAX_TILES + 2)});
+        Resource r = new ByteArrayResource(new byte[] {(byte) (MAX_TILES + 1), (byte) (MAX_TILES + 2)});
         transCache.put("foo" + MAX_TILES, r);
         assertThat(transCache.size(), is(MAX_TILES));
-        assertThat(
-                transCache.storageSize(),
-                is((long) MAX_TILES * 3 - 1)); // remove a 3 byte  and add a 2 byte
+        assertThat(transCache.storageSize(), is((long) MAX_TILES * 3 - 1)); // remove a 3 byte  and add a 2 byte
 
         ticker.advanceMilli(1);
 
@@ -121,30 +116,22 @@ public class TransientCacheTest {
 
         for (long i = 0; i < MAX_SPACE_KiB; i++) {
             Resource r =
-                    new ByteArrayResource(
-                            new byte
-                                    [i == 0
-                                            ? 1023
-                                            : 1024]); // make the first one 1 byte less than a KiB
+                    new ByteArrayResource(new byte[i == 0 ? 1023 : 1024]); // make the first one 1 byte less than a KiB
             transCache.put("foo" + i, r);
             assertThat(
-                    transCache.storageSize(),
-                    is((i + 1) * 1024 - 1)); // 1 KiB per resource, less a byte for the first
+                    transCache.storageSize(), is((i + 1) * 1024 - 1)); // 1 KiB per resource, less a byte for the first
             ticker.advanceMilli(1);
         }
         assertThat(
                 transCache.storageSize(),
-                is(
-                        (long) MAX_SPACE_KiB * 1024
-                                - 1)); // 1 KiB per resource, less a byte for the first
+                is((long) MAX_SPACE_KiB * 1024 - 1)); // 1 KiB per resource, less a byte for the first
         assertThat(transCache.size(), is(MAX_SPACE_KiB));
         Resource r = new ByteArrayResource(new byte[2]); // 2 bytes will go over the maximum
         transCache.put("foo" + MAX_SPACE_KiB, r);
         assertThat(
                 transCache.storageSize(),
-                is(
-                        (long) (MAX_SPACE_KiB - 1) * 1024
-                                + 2)); // 1 KiB for each of the resources except the first should be
+                is((long) (MAX_SPACE_KiB - 1) * 1024
+                        + 2)); // 1 KiB for each of the resources except the first should be
         // removed, and the last is only 2 bytes.
         assertThat(transCache.size(), is(MAX_SPACE_KiB));
 

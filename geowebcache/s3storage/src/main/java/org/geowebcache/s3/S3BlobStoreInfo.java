@@ -1,14 +1,13 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Gabriel Roldan, Boundless Spatial Inc, Copyright 2015
  */
@@ -27,6 +26,7 @@ import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
+import java.io.Serial;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
@@ -46,6 +46,7 @@ public class S3BlobStoreInfo extends BlobStoreInfo {
 
     static Logger log = Logging.getLogger(S3BlobStoreInfo.class.getName());
 
+    @Serial
     private static final long serialVersionUID = 9072751143836460389L;
 
     private String bucket;
@@ -107,8 +108,7 @@ public class S3BlobStoreInfo extends BlobStoreInfo {
     }
 
     /**
-     * Returns the base prefix, which is a prefix path to use as the root to store tiles under the
-     * bucket.
+     * Returns the base prefix, which is a prefix path to use as the root to store tiles under the bucket.
      *
      * @return optional string for a "base prefix"
      */
@@ -181,8 +181,8 @@ public class S3BlobStoreInfo extends BlobStoreInfo {
     }
 
     /**
-     * Returns the optional Windows workstation name for configuring NTLM proxy support. If you
-     * aren't using a Windows NTLM proxy, you do not need to set this field.
+     * Returns the optional Windows workstation name for configuring NTLM proxy support. If you aren't using a Windows
+     * NTLM proxy, you do not need to set this field.
      *
      * @return The optional Windows workstation name for configuring NTLM proxy support.
      */
@@ -192,11 +192,10 @@ public class S3BlobStoreInfo extends BlobStoreInfo {
     }
 
     /**
-     * Sets the optional Windows workstation name for configuring NTLM proxy support. If you aren't
-     * using a Windows NTLM proxy, you do not need to set this field.
+     * Sets the optional Windows workstation name for configuring NTLM proxy support. If you aren't using a Windows NTLM
+     * proxy, you do not need to set this field.
      *
-     * @param proxyWorkstation The optional Windows workstation name for configuring NTLM proxy
-     *     support.
+     * @param proxyWorkstation The optional Windows workstation name for configuring NTLM proxy support.
      */
     public void setProxyWorkstation(String proxyWorkstation) {
         this.proxyWorkstation = proxyWorkstation;
@@ -242,8 +241,7 @@ public class S3BlobStoreInfo extends BlobStoreInfo {
     /**
      * Returns the optional proxy user name to use if connecting through a proxy.
      *
-     * @return The optional proxy user name the configured client will use if connecting through a
-     *     proxy.
+     * @return The optional proxy user name the configured client will use if connecting through a proxy.
      */
     @Nullable
     public String getProxyUsername() {
@@ -330,21 +328,16 @@ public class S3BlobStoreInfo extends BlobStoreInfo {
     }
 
     @Override
-    public BlobStore createInstance(TileLayerDispatcher layers, LockProvider lockProvider)
-            throws StorageException {
+    public BlobStore createInstance(TileLayerDispatcher layers, LockProvider lockProvider) throws StorageException {
 
         checkNotNull(layers);
         checkState(getName() != null);
-        checkState(
-                isEnabled(),
-                "Can't call S3BlobStoreConfig.createInstance() is blob store is not enabled");
-        final GeoWebCacheEnvironment gwcEnvironment =
-                GeoWebCacheExtensions.bean(GeoWebCacheEnvironment.class);
+        checkState(isEnabled(), "Can't call S3BlobStoreConfig.createInstance() is blob store is not enabled");
+        final GeoWebCacheEnvironment gwcEnvironment = GeoWebCacheExtensions.bean(GeoWebCacheEnvironment.class);
         return new S3BlobStore(this.clone(gwcEnvironment, true), layers, lockProvider);
     }
 
-    public S3BlobStoreInfo clone(
-            GeoWebCacheEnvironment gwcEnvironment, Boolean allowEnvParametrization) {
+    public S3BlobStoreInfo clone(GeoWebCacheEnvironment gwcEnvironment, Boolean allowEnvParametrization) {
         S3BlobStoreInfo blobStore = SerializationUtils.clone(this);
 
         if (allowEnvParametrization && gwcEnvironment != null) {
@@ -361,8 +354,7 @@ public class S3BlobStoreInfo extends BlobStoreInfo {
             blobStore.setAwsAccessKey(nullSafeResolveString(getAwsAccessKey(), gwcEnvironment));
             blobStore.setAwsSecretKey(nullSafeResolveString(getAwsSecretKey(), gwcEnvironment));
             blobStore.setProxyDomain(nullSafeResolveString(getProxyDomain(), gwcEnvironment));
-            blobStore.setProxyWorkstation(
-                    nullSafeResolveString(getProxyWorkstation(), gwcEnvironment));
+            blobStore.setProxyWorkstation(nullSafeResolveString(getProxyWorkstation(), gwcEnvironment));
             blobStore.setProxyHost(nullSafeResolveString(getProxyHost(), gwcEnvironment));
             blobStore.setProxyUsername(nullSafeResolveString(getProxyUsername(), gwcEnvironment));
             blobStore.setProxyPassword(nullSafeResolveString(getProxyPassword(), gwcEnvironment));
@@ -375,7 +367,7 @@ public class S3BlobStoreInfo extends BlobStoreInfo {
         if (value == null) {
             return null;
         }
-        return gwcEnvironment.resolveValue(value).toString();
+        return gwcEnvironment.resolveValue(value);
     }
 
     private Integer toInteger(String value) {
@@ -402,9 +394,9 @@ public class S3BlobStoreInfo extends BlobStoreInfo {
         String bucket = this.getBucket();
         String prefix = this.getPrefix();
         if (prefix == null) {
-            return String.format("bucket: %s", bucket);
+            return "bucket: %s".formatted(bucket);
         } else {
-            return String.format("bucket: %s prefix: %s", bucket, prefix);
+            return "bucket: %s prefix: %s".formatted(bucket, prefix);
         }
     }
 
@@ -433,7 +425,8 @@ public class S3BlobStoreInfo extends BlobStoreInfo {
             clientConfig.setUseGzip(useGzip);
         }
         log.fine("Initializing AWS S3 connection");
-        AmazonS3Client client = new AmazonS3Client(getCredentialsProvider(), clientConfig);
+        AWSCredentialsProvider credentialsProvider = getCredentialsProvider();
+        AmazonS3Client client = new AmazonS3Client(credentialsProvider, clientConfig);
         if (endpoint != null && !"".equals(endpoint)) {
             S3ClientOptions s3ClientOptions = new S3ClientOptions();
             s3ClientOptions.setPathStyleAccess(true);

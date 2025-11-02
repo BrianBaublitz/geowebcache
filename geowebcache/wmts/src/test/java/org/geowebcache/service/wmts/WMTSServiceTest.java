@@ -15,6 +15,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -25,6 +26,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -36,8 +39,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.commons.io.FileUtils;
 import org.custommonkey.xmlunit.SimpleNamespaceContext;
@@ -97,6 +98,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.context.WebApplicationContext;
 import org.w3c.dom.Document;
 
+@SuppressWarnings("DirectInvocationOnMock")
 public class WMTSServiceTest {
 
     private WMTSService service;
@@ -107,7 +109,9 @@ public class WMTSServiceTest {
 
     private GridSetBroker gridsetBroker;
 
-    @Rule public TemporaryFolder temp = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder temp = new TemporaryFolder();
+
     private File configDir;
     private File configFile;
 
@@ -115,8 +119,7 @@ public class WMTSServiceTest {
     public void setUp() throws Exception {
         sb = mock(StorageBroker.class);
         tld = mock(TileLayerDispatcher.class);
-        gridsetBroker =
-                new GridSetBroker(Collections.singletonList(new DefaultGridsets(true, true)));
+        gridsetBroker = new GridSetBroker(Collections.singletonList(new DefaultGridsets(true, true)));
     }
 
     private TileLayerDispatcher mockTileLayerDispatcher() throws Exception {
@@ -150,31 +153,25 @@ public class WMTSServiceTest {
         }
         // initialize the config with an XMLFileResourceProvider that uses the temp
         // config file
-        gridsetBroker =
-                new GridSetBroker(Collections.singletonList(new DefaultGridsets(true, true)));
-        ConfigurationResourceProvider configProvider =
-                new XMLFileResourceProvider(
-                        XMLConfiguration.DEFAULT_CONFIGURATION_FILE_NAME,
-                        (WebApplicationContext) null,
-                        configDir.getAbsolutePath(),
-                        null);
+        gridsetBroker = new GridSetBroker(Collections.singletonList(new DefaultGridsets(true, true)));
+        ConfigurationResourceProvider configProvider = new XMLFileResourceProvider(
+                XMLConfiguration.DEFAULT_CONFIGURATION_FILE_NAME,
+                (WebApplicationContext) null,
+                configDir.getAbsolutePath(),
+                null);
         XMLConfiguration config = new XMLConfiguration(null, configProvider);
         config.setGridSetBroker(gridsetBroker);
         config.afterPropertiesSet();
         return config;
     }
 
-    private TileLayer mockTileLayer(
-            String layerName, List<String> gridSetNames, List<ParameterFilter> parameterFilters)
+    private TileLayer mockTileLayer(String layerName, List<String> gridSetNames, List<ParameterFilter> parameterFilters)
             throws Exception {
         return mockTileLayer(layerName, gridSetNames, parameterFilters, true);
     }
 
     private TileLayer mockTileLayer(
-            String layerName,
-            List<String> gridSetNames,
-            List<ParameterFilter> parameterFilters,
-            boolean advertised)
+            String layerName, List<String> gridSetNames, List<ParameterFilter> parameterFilters, boolean advertised)
             throws Exception {
 
         TileLayer tileLayer = mock(TileLayer.class);
@@ -190,8 +187,7 @@ public class WMTSServiceTest {
         final MimeType infoMimeType1 = MimeType.createFromFormat("text/plain");
         final MimeType infoMimeType2 = MimeType.createFromFormat("text/html");
         final MimeType infoMimeType3 = MimeType.createFromFormat("application/vnd.ogc.gml");
-        when(tileLayer.getInfoMimeTypes())
-                .thenReturn(Arrays.asList(infoMimeType1, infoMimeType2, infoMimeType3));
+        when(tileLayer.getInfoMimeTypes()).thenReturn(Arrays.asList(infoMimeType1, infoMimeType2, infoMimeType3));
 
         Map<String, GridSubset> subsets = new HashMap<>();
         Map<SRS, List<GridSubset>> bySrs = new HashMap<>();
@@ -233,11 +229,9 @@ public class WMTSServiceTest {
         return tileLayer;
     }
 
-    private TileLayer mockTileLayerWithJSONSupport(String layerName, List<String> gridSetNames)
-            throws Exception {
+    private TileLayer mockTileLayerWithJSONSupport(String layerName, List<String> gridSetNames) throws Exception {
 
-        TileLayer tileLayer =
-                mock(TileLayer.class, withSettings().extraInterfaces(TileJSONProvider.class));
+        TileLayer tileLayer = mock(TileLayer.class, withSettings().extraInterfaces(TileJSONProvider.class));
         when(tld.getTileLayer(eq(layerName))).thenReturn(tileLayer);
         when(tileLayer.getName()).thenReturn(layerName);
         when(tileLayer.isEnabled()).thenReturn(true);
@@ -297,13 +291,9 @@ public class WMTSServiceTest {
     @Test
     public void testGetCap() throws Exception {
 
-        GeoWebCacheDispatcher gwcd = mock(GeoWebCacheDispatcher.class);
-        when(gwcd.getServletPrefix()).thenReturn(null);
-
         service = new WMTSService(sb, tld, null, mock(RuntimeStats.class));
 
-        @SuppressWarnings("unchecked")
-        Map<String, String[]> kvp = new CaseInsensitiveMap();
+        Map<String, String[]> kvp = new CaseInsensitiveMap<>();
         kvp.put("service", new String[] {"WMTS"});
         kvp.put("version", new String[] {"1.0.0"});
         kvp.put("request", new String[] {"GetCapabilities"});
@@ -314,12 +304,10 @@ public class WMTSServiceTest {
         when(req.getParameterMap()).thenReturn(kvp);
 
         {
-            List<String> gridSetNames =
-                    Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale", "EPSG:4326");
+            List<String> gridSetNames = Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale", "EPSG:4326");
 
             TileLayer tileLayer = mockTileLayer("mockLayer", gridSetNames, Collections.emptyList());
-            TileLayer tileLayerUn =
-                    mockTileLayer("mockLayerUnadv", gridSetNames, Collections.emptyList(), false);
+            TileLayer tileLayerUn = mockTileLayer("mockLayerUnadv", gridSetNames, Collections.emptyList(), false);
 
             when(tld.getLayerList()).thenReturn(Arrays.asList(tileLayer, tileLayerUn));
             when(tld.getLayerListFiltered()).thenReturn(Arrays.asList(tileLayer, tileLayerUn));
@@ -330,36 +318,31 @@ public class WMTSServiceTest {
             styles.setValues(Arrays.asList("style-a", "style-b"));
             when(tileLayer.getParameterFilters()).thenReturn(Collections.singletonList(styles));
             // add legend info for style-a
-            LegendInfo legendInfo1 =
-                    new LegendInfoBuilder()
-                            .withStyleName("style-a-legend")
-                            .withWidth(250)
-                            .withHeight(500)
-                            .withFormat("image/jpeg")
-                            .withCompleteUrl(
-                                    "https://some-url?some-parameter=value1&another-parameter=value2")
-                            .build();
+            LegendInfo legendInfo1 = new LegendInfoBuilder()
+                    .withStyleName("style-a-legend")
+                    .withWidth(250)
+                    .withHeight(500)
+                    .withFormat("image/jpeg")
+                    .withCompleteUrl("https://some-url?some-parameter=value1&another-parameter=value2")
+                    .build();
             Map<String, LegendInfo> legends = new HashMap<>();
             legends.put("style-a", legendInfo1);
             // add legend info for style-b
-            LegendInfo legendInfo2 =
-                    new LegendInfoBuilder()
-                            .withStyleName("styla-b-legend")
-                            .withWidth(125)
-                            .withHeight(130)
-                            .withFormat("image/png")
-                            .withCompleteUrl(
-                                    "https://some-url?some-parameter=value3&another-parameter=value4")
-                            .withMinScale(5000D)
-                            .withMaxScale(10000D)
-                            .build();
+            LegendInfo legendInfo2 = new LegendInfoBuilder()
+                    .withStyleName("styla-b-legend")
+                    .withWidth(125)
+                    .withHeight(130)
+                    .withFormat("image/png")
+                    .withCompleteUrl("https://some-url?some-parameter=value3&another-parameter=value4")
+                    .withMinScale(5000D)
+                    .withMaxScale(10000D)
+                    .build();
             legends.put("style-b", legendInfo2);
             when(tileLayer.getLayerLegendsInfo()).thenReturn(legends);
 
             // add some layer metadata
             MetadataURL metadataURL =
-                    new MetadataURL(
-                            "some-type", "some-format", URLs.of("http://localhost:8080/some-url"));
+                    new MetadataURL("some-type", "some-format", URLs.of("http://localhost:8080/some-url"));
             when(tileLayer.getMetadataURLs()).thenReturn(Collections.singletonList(metadataURL));
         }
 
@@ -370,18 +353,11 @@ public class WMTSServiceTest {
         assertNull(layerName);
 
         assertEquals(Conveyor.RequestHandler.SERVICE, conv.reqHandler);
-        WMTSGetCapabilities wmsCap =
-                new WMTSGetCapabilities(
-                        tld,
-                        gridsetBroker,
-                        conv.servletReq,
-                        "http://localhost:8080",
-                        "/geowebcache",
-                        new NullURLMangler());
+        WMTSGetCapabilities wmsCap = new WMTSGetCapabilities(
+                tld, gridsetBroker, conv.servletReq, "http://localhost:8080", "/geowebcache", new NullURLMangler());
         wmsCap.writeResponse(conv.servletResp, mock(RuntimeStats.class));
         assertTrue(resp.containsHeader("content-disposition"));
-        assertEquals(
-                "inline;filename=wmts-getcapabilities.xml", resp.getHeader("content-disposition"));
+        assertEquals("inline;filename=wmts-getcapabilities.xml", resp.getHeader("content-disposition"));
 
         // System.out.println(resp.getContentAsString());
 
@@ -396,26 +372,16 @@ public class WMTSServiceTest {
         // validator.assertIsValid();
 
         Document doc = XMLUnit.buildTestDocument(result);
-        Map<String, String> namespaces = new HashMap<>();
-        namespaces.put("xlink", "http://www.w3.org/1999/xlink");
-        namespaces.put("xsi", "http://www.w3.org/2001/XMLSchema-instance");
-        namespaces.put("ows", "http://www.opengis.net/ows/1.1");
-        namespaces.put("wmts", "http://www.opengis.net/wmts/1.0");
-        XMLUnit.setXpathNamespaceContext(new SimpleNamespaceContext(namespaces));
-        XpathEngine xp = XMLUnit.newXpathEngine();
+        XpathEngine xp = buildWMTSXPath();
+
+        // check that with no keywords, there is no container ows:Keywords element (can be missing,
+        // cannot be empty)
+        assertEquals("0", xp.evaluate("count(//ows:Keywords)", doc));
 
         assertEquals("1", xp.evaluate("count(//wmts:Contents/wmts:Layer)", doc));
-        assertEquals(
-                "1",
-                xp.evaluate("count(//wmts:Contents/wmts:Layer[ows:Identifier='mockLayer'])", doc));
-        assertEquals(
-                "2",
-                xp.evaluate("count(//wmts:Contents/wmts:Layer/wmts:Style/ows:Identifier)", doc));
-        assertEquals(
-                "1",
-                xp.evaluate(
-                        "count(//wmts:Contents/wmts:Layer/wmts:Style[ows:Identifier='style-a'])",
-                        doc));
+        assertEquals("1", xp.evaluate("count(//wmts:Contents/wmts:Layer[ows:Identifier='mockLayer'])", doc));
+        assertEquals("2", xp.evaluate("count(//wmts:Contents/wmts:Layer/wmts:Style/ows:Identifier)", doc));
+        assertEquals("1", xp.evaluate("count(//wmts:Contents/wmts:Layer/wmts:Style[ows:Identifier='style-a'])", doc));
         // checking that style-a has the correct legend url
         assertEquals(
                 "1",
@@ -435,13 +401,7 @@ public class WMTSServiceTest {
         assertEquals(
                 "1",
                 xp.evaluate(
-                        "count(//wmts:Contents/wmts:Layer/wmts:MetadataURL[@type='some-type'][wmts:Format='some-format'])",
-                        doc));
-        assertEquals(
-                "1",
-                xp.evaluate(
-                        "count(//wmts:Contents/wmts:Layer/wmts:MetadataURL[@type='some-type']"
-                                + "/wmts:OnlineResource[@xlink:href='http://localhost:8080/some-url'])",
+                        "count(//wmts:Contents/wmts:Layer/ows:Metadata[@xlink:href='http://localhost:8080/some-url'])",
                         doc));
         // checking that the layer has an associated tile resource URL, for each
         // supported image
@@ -523,80 +483,72 @@ public class WMTSServiceTest {
     public void testGetCapWithExtensions() throws Exception {
         // setup some WMTS extensions
         List<WMTSExtension> extensions = new ArrayList<>();
-        extensions.add(
-                new WMTSExtension() {
-                    @Override
-                    public String[] getSchemaLocations() {
-                        return new String[] {"name-space schema-location"};
-                    }
+        extensions.add(new WMTSExtension() {
+            @Override
+            public String[] getSchemaLocations() {
+                return new String[] {"name-space schema-location"};
+            }
 
-                    @Override
-                    public void registerNamespaces(XMLBuilder xml) throws IOException {
-                        xml.attribute("xmlns:custom", "custom");
-                    }
+            @Override
+            public void registerNamespaces(XMLBuilder xml) throws IOException {
+                xml.attribute("xmlns:custom", "custom");
+            }
 
-                    @Override
-                    public void encodedOperationsMetadata(XMLBuilder xml) throws IOException {
-                        xml.startElement("custom-metadata");
-                        xml.endElement("custom-metadata");
-                    }
+            @Override
+            public void encodedOperationsMetadata(XMLBuilder xml) throws IOException {
+                xml.startElement("custom-metadata");
+                xml.endElement("custom-metadata");
+            }
 
-                    @Override
-                    public List<OperationMetadata> getExtraOperationsMetadata() throws IOException {
-                        return Arrays.asList(
-                                new OperationMetadata("ExtraOperation1"),
-                                new OperationMetadata("ExtraOperation2", "custom-url"));
-                    }
+            @Override
+            public List<OperationMetadata> getExtraOperationsMetadata() throws IOException {
+                return Arrays.asList(
+                        new OperationMetadata("ExtraOperation1"),
+                        new OperationMetadata("ExtraOperation2", "custom-url"));
+            }
 
-                    @Override
-                    public ServiceInformation getServiceInformation() {
-                        ServiceInformation serviceInformation = new ServiceInformation();
-                        serviceInformation.setTitle("custom-service");
-                        return serviceInformation;
-                    }
+            @Override
+            public ServiceInformation getServiceInformation() {
+                ServiceInformation serviceInformation = new ServiceInformation();
+                serviceInformation.setTitle("custom-service");
+                return serviceInformation;
+            }
 
-                    @Override
-                    public Conveyor getConveyor(
-                            HttpServletRequest request,
-                            HttpServletResponse response,
-                            StorageBroker storageBroker)
-                            throws GeoWebCacheException, OWSException {
-                        return null;
-                    }
+            @Override
+            public Conveyor getConveyor(
+                    HttpServletRequest request, HttpServletResponse response, StorageBroker storageBroker)
+                    throws GeoWebCacheException, OWSException {
+                return null;
+            }
 
-                    @Override
-                    public boolean handleRequest(Conveyor conveyor) throws OWSException {
-                        return false;
-                    }
+            @Override
+            public boolean handleRequest(Conveyor conveyor) throws OWSException {
+                return false;
+            }
 
-                    @Override
-                    public void encodeLayer(XMLBuilder xmlBuilder, TileLayer tileLayer)
-                            throws IOException {
-                        xmlBuilder.simpleElement("extra-layer-metadata", "metadatada", true);
-                    }
-                });
-        extensions.add(
-                new WMTSExtensionImpl() {
-                    @Override
-                    public ServiceInformation getServiceInformation() {
-                        ServiceInformation serviceInformation = new ServiceInformation();
-                        ServiceProvider serviceProvider = new ServiceProvider();
-                        serviceProvider.setProviderName("custom-provider");
-                        serviceInformation.setServiceProvider(serviceProvider);
-                        ServiceContact contactInformation = new ServiceContact();
-                        contactInformation.setPositionName("custom-position");
-                        serviceProvider.setServiceContact(contactInformation);
-                        return serviceInformation;
-                    }
-                });
+            @Override
+            public void encodeLayer(XMLBuilder xmlBuilder, TileLayer tileLayer) throws IOException {
+                xmlBuilder.simpleElement("extra-layer-metadata", "metadatada", true);
+            }
+        });
+        extensions.add(new WMTSExtensionImpl() {
+            @Override
+            public ServiceInformation getServiceInformation() {
+                ServiceInformation serviceInformation = new ServiceInformation();
+                ServiceProvider serviceProvider = new ServiceProvider();
+                serviceProvider.setProviderName("custom-provider");
+                serviceInformation.setServiceProvider(serviceProvider);
+                ServiceContact contactInformation = new ServiceContact();
+                contactInformation.setPositionName("custom-position");
+                serviceProvider.setServiceContact(contactInformation);
+                return serviceInformation;
+            }
+        });
         extensions.add(new WMTSExtensionImpl());
         // mock execution context
-        GeoWebCacheDispatcher gwcd = mock(GeoWebCacheDispatcher.class);
-        when(gwcd.getServletPrefix()).thenReturn(null);
         service = new WMTSService(sb, tld, null, mock(RuntimeStats.class));
         extensions.forEach(service::addExtension);
-        @SuppressWarnings("unchecked")
-        Map<String, String[]> kvp = new CaseInsensitiveMap();
+        Map<String, String[]> kvp = new CaseInsensitiveMap<>();
         kvp.put("service", new String[] {"WMTS"});
         kvp.put("version", new String[] {"1.0.0"});
         kvp.put("request", new String[] {"GetCapabilities"});
@@ -604,8 +556,7 @@ public class WMTSServiceTest {
         MockHttpServletResponse resp = new MockHttpServletResponse();
         when(req.getCharacterEncoding()).thenReturn("UTF-8");
         when(req.getParameterMap()).thenReturn(kvp);
-        List<String> gridSetNames =
-                Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale", "EPSG:4326");
+        List<String> gridSetNames = Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale", "EPSG:4326");
         TileLayer tileLayer = mockTileLayer("mockLayer", gridSetNames, Collections.emptyList());
         when(tld.getLayerList()).thenReturn(Collections.singletonList(tileLayer));
         when(tld.getLayerListFiltered()).thenReturn(Collections.singletonList(tileLayer));
@@ -614,52 +565,34 @@ public class WMTSServiceTest {
         assertNotNull(conv);
         assertEquals(Conveyor.RequestHandler.SERVICE, conv.reqHandler);
         // perform the get capabilities request
-        WMTSGetCapabilities wmsCap =
-                new WMTSGetCapabilities(
-                        tld,
-                        gridsetBroker,
-                        conv.servletReq,
-                        "http://localhost:8080",
-                        "/service/wmts",
-                        new NullURLMangler(),
-                        extensions);
+        WMTSGetCapabilities wmsCap = new WMTSGetCapabilities(
+                tld,
+                gridsetBroker,
+                conv.servletReq,
+                "http://localhost:8080",
+                "/service/wmts",
+                new NullURLMangler(),
+                extensions);
         wmsCap.writeResponse(conv.servletResp, mock(RuntimeStats.class));
         assertTrue(resp.containsHeader("content-disposition"));
-        assertEquals(
-                "inline;filename=wmts-getcapabilities.xml", resp.getHeader("content-disposition"));
+        assertEquals("inline;filename=wmts-getcapabilities.xml", resp.getHeader("content-disposition"));
         String result = resp.getContentAsString();
         assertTrue(result.contains("xmlns:custom=\"custom\""));
         assertTrue(result.contains("name-space schema-location"));
         // instantiate the xpath engine
         Document doc = XMLUnit.buildTestDocument(result);
-        Map<String, String> namespaces = new HashMap<>();
-        namespaces.put("xlink", "http://www.w3.org/1999/xlink");
-        namespaces.put("xsi", "http://www.w3.org/2001/XMLSchema-instance");
-        namespaces.put("ows", "http://www.opengis.net/ows/1.1");
-        namespaces.put("wmts", "http://www.opengis.net/wmts/1.0");
-        XMLUnit.setXpathNamespaceContext(new SimpleNamespaceContext(namespaces));
-        XpathEngine xpath = XMLUnit.newXpathEngine();
+        XpathEngine xpath = buildWMTSXPath();
         // checking that we have the service extra information
         assertEquals("1", xpath.evaluate("count(//wmts:custom-metadata)", doc));
+        assertEquals("1", xpath.evaluate("count(//ows:ServiceIdentification[ows:Title='custom-service'])", doc));
+        assertEquals("1", xpath.evaluate("count(//ows:ServiceProvider[ows:ProviderName='custom-provider'])", doc));
         assertEquals(
                 "1",
                 xpath.evaluate(
-                        "count(//ows:ServiceIdentification[ows:Title='custom-service'])", doc));
-        assertEquals(
-                "1",
-                xpath.evaluate(
-                        "count(//ows:ServiceProvider[ows:ProviderName='custom-provider'])", doc));
-        assertEquals(
-                "1",
-                xpath.evaluate(
-                        "count(//ows:ServiceProvider/ows:ServiceContact[ows:PositionName='custom-position'])",
-                        doc));
+                        "count(//ows:ServiceProvider/ows:ServiceContact[ows:PositionName='custom-position'])", doc));
         // checking that the extra operations were encoded
         assertEquals(
-                "1",
-                xpath.evaluate(
-                        "count(//ows:OperationsMetadata/ows:Operation[@name='ExtraOperation1'])",
-                        doc));
+                "1", xpath.evaluate("count(//ows:OperationsMetadata/ows:Operation[@name='ExtraOperation1'])", doc));
         assertEquals(
                 "1",
                 xpath.evaluate(
@@ -667,10 +600,7 @@ public class WMTSServiceTest {
                                 + "/ows:DCP/ows:HTTP/ows:Get[@xlink:href='http://localhost:8080/service/wmts/service/wmts?'])",
                         doc));
         assertEquals(
-                "1",
-                xpath.evaluate(
-                        "count(//ows:OperationsMetadata/ows:Operation[@name='ExtraOperation2'])",
-                        doc));
+                "1", xpath.evaluate("count(//ows:OperationsMetadata/ows:Operation[@name='ExtraOperation2'])", doc));
         assertEquals(
                 "1",
                 xpath.evaluate(
@@ -678,20 +608,16 @@ public class WMTSServiceTest {
                                 + "/ows:DCP/ows:HTTP/ows:Get[@xlink:href='custom-url?'])",
                         doc));
         // checking that layer extra metadata was encoded
-        xpath.evaluate(
-                "count(//wmts:Contents/wmts:Layer[wmts:extra-layer-metadata='metadatada'])", doc);
+        xpath.evaluate("count(//wmts:Contents/wmts:Layer[wmts:extra-layer-metadata='metadatada'])", doc);
     }
 
     @Test
     public void testGetCapServiceInfo() throws Exception {
         TileLayerDispatcher tldx = mockTileLayerDispatcher();
-        GeoWebCacheDispatcher gwcd = mock(GeoWebCacheDispatcher.class);
-        when(gwcd.getServletPrefix()).thenReturn(null);
 
         service = new WMTSService(sb, tldx, null, mock(RuntimeStats.class));
 
-        @SuppressWarnings("unchecked")
-        Map<String, String[]> kvp = new CaseInsensitiveMap();
+        Map<String, String[]> kvp = new CaseInsensitiveMap<>();
         kvp.put("service", new String[] {"WMTS"});
         kvp.put("version", new String[] {"1.0.0"});
         kvp.put("request", new String[] {"GetCapabilities"});
@@ -703,12 +629,10 @@ public class WMTSServiceTest {
 
         {
             List<String> gridSetNames =
-                    Arrays.asList(
-                            "GlobalCRS84Pixel", "GlobalCRS84Scale", "EPSG:4326", "EPSG:900913");
+                    Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale", "EPSG:4326", "EPSG:900913");
 
             TileLayer tileLayer = mockTileLayer("mockLayer", gridSetNames, Collections.emptyList());
-            TileLayer tileLayerUn =
-                    mockTileLayer("mockLayerUnadv", gridSetNames, Collections.emptyList(), false);
+            TileLayer tileLayerUn = mockTileLayer("mockLayerUnadv", gridSetNames, Collections.emptyList(), false);
             when(tld.getLayerList()).thenReturn(Arrays.asList(tileLayer, tileLayerUn));
             when(tld.getLayerListFiltered()).thenReturn(Arrays.asList(tileLayer, tileLayerUn));
 
@@ -728,18 +652,11 @@ public class WMTSServiceTest {
         assertNull(layerName);
 
         assertEquals(Conveyor.RequestHandler.SERVICE, conv.reqHandler);
-        WMTSGetCapabilities wmsCap =
-                new WMTSGetCapabilities(
-                        tldx,
-                        gridsetBroker,
-                        conv.servletReq,
-                        "http://localhost:8080",
-                        "/geowebcache",
-                        new NullURLMangler());
+        WMTSGetCapabilities wmsCap = new WMTSGetCapabilities(
+                tldx, gridsetBroker, conv.servletReq, "http://localhost:8080", "/geowebcache", new NullURLMangler());
         wmsCap.writeResponse(conv.servletResp, mock(RuntimeStats.class));
         assertTrue(resp.containsHeader("content-disposition"));
-        assertEquals(
-                "inline;filename=wmts-getcapabilities.xml", resp.getHeader("content-disposition"));
+        assertEquals("inline;filename=wmts-getcapabilities.xml", resp.getHeader("content-disposition"));
 
         // System.out.println(resp.getContentAsString());
 
@@ -752,26 +669,16 @@ public class WMTSServiceTest {
         // validator.assertIsValid();
 
         Document doc = XMLUnit.buildTestDocument(result);
-        Map<String, String> namespaces = new HashMap<>();
-        namespaces.put("xlink", "http://www.w3.org/1999/xlink");
-        namespaces.put("xsi", "http://www.w3.org/2001/XMLSchema-instance");
-        namespaces.put("ows", "http://www.opengis.net/ows/1.1");
-        namespaces.put("wmts", "http://www.opengis.net/wmts/1.0");
-        XMLUnit.setXpathNamespaceContext(new SimpleNamespaceContext(namespaces));
-        XpathEngine xpath = XMLUnit.newXpathEngine();
+        XpathEngine xpath = buildWMTSXPath();
         assertEquals("John Smith", xpath.evaluate("//ows:IndividualName", doc));
     }
 
     @Test
     public void testGetCapOneWGS84BBox() throws Exception {
 
-        GeoWebCacheDispatcher gwcd = mock(GeoWebCacheDispatcher.class);
-        when(gwcd.getServletPrefix()).thenReturn(null);
-
         service = new WMTSService(sb, tld, null, mock(RuntimeStats.class));
 
-        @SuppressWarnings("unchecked")
-        Map<String, String[]> kvp = new CaseInsensitiveMap();
+        Map<String, String[]> kvp = new CaseInsensitiveMap<>();
         kvp.put("service", new String[] {"WMTS"});
         kvp.put("version", new String[] {"1.0.0"});
         kvp.put("request", new String[] {"GetCapabilities"});
@@ -783,12 +690,10 @@ public class WMTSServiceTest {
 
         {
             List<String> gridSetNames =
-                    Arrays.asList(
-                            "GlobalCRS84Pixel", "GlobalCRS84Scale", "EPSG:4326", "EPSG:900913");
+                    Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale", "EPSG:4326", "EPSG:900913");
 
             TileLayer tileLayer = mockTileLayer("mockLayer", gridSetNames, Collections.emptyList());
-            TileLayer tileLayerUn =
-                    mockTileLayer("mockLayerUnadv", gridSetNames, Collections.emptyList(), false);
+            TileLayer tileLayerUn = mockTileLayer("mockLayerUnadv", gridSetNames, Collections.emptyList(), false);
             when(tld.getLayerList()).thenReturn(Arrays.asList(tileLayer, tileLayerUn));
             when(tld.getLayerListFiltered()).thenReturn(Arrays.asList(tileLayer, tileLayerUn));
 
@@ -808,18 +713,11 @@ public class WMTSServiceTest {
         assertNull(layerName);
 
         assertEquals(Conveyor.RequestHandler.SERVICE, conv.reqHandler);
-        WMTSGetCapabilities wmsCap =
-                new WMTSGetCapabilities(
-                        tld,
-                        gridsetBroker,
-                        conv.servletReq,
-                        "http://localhost:8080",
-                        "/geowebcache",
-                        new NullURLMangler());
+        WMTSGetCapabilities wmsCap = new WMTSGetCapabilities(
+                tld, gridsetBroker, conv.servletReq, "http://localhost:8080", "/geowebcache", new NullURLMangler());
         wmsCap.writeResponse(conv.servletResp, mock(RuntimeStats.class));
         assertTrue(resp.containsHeader("content-disposition"));
-        assertEquals(
-                "inline;filename=wmts-getcapabilities.xml", resp.getHeader("content-disposition"));
+        assertEquals("inline;filename=wmts-getcapabilities.xml", resp.getHeader("content-disposition"));
 
         // System.out.println(resp.getContentAsString());
 
@@ -834,13 +732,7 @@ public class WMTSServiceTest {
         // validator.assertIsValid();
 
         Document doc = XMLUnit.buildTestDocument(result);
-        Map<String, String> namespaces = new HashMap<>();
-        namespaces.put("xlink", "http://www.w3.org/1999/xlink");
-        namespaces.put("xsi", "http://www.w3.org/2001/XMLSchema-instance");
-        namespaces.put("ows", "http://www.opengis.net/ows/1.1");
-        namespaces.put("wmts", "http://www.opengis.net/wmts/1.0");
-        XMLUnit.setXpathNamespaceContext(new SimpleNamespaceContext(namespaces));
-        XpathEngine xpath = XMLUnit.newXpathEngine();
+        XpathEngine xpath = buildWMTSXPath();
 
         assertEquals("1", xpath.evaluate("count(//ows:WGS84BoundingBox)", doc));
     }
@@ -848,13 +740,9 @@ public class WMTSServiceTest {
     @Test
     public void testGetCapUnboundedStyleFilter() throws Exception {
 
-        GeoWebCacheDispatcher gwcd = mock(GeoWebCacheDispatcher.class);
-        when(gwcd.getServletPrefix()).thenReturn(null);
-
         service = new WMTSService(sb, tld, null, mock(RuntimeStats.class));
 
-        @SuppressWarnings("unchecked")
-        Map<String, String[]> kvp = new CaseInsensitiveMap();
+        Map<String, String[]> kvp = new CaseInsensitiveMap<>();
         kvp.put("service", new String[] {"WMTS"});
         kvp.put("version", new String[] {"1.0.0"});
         kvp.put("request", new String[] {"GetCapabilities"});
@@ -865,17 +753,14 @@ public class WMTSServiceTest {
         when(req.getParameterMap()).thenReturn(kvp);
 
         {
-            List<String> gridSetNames =
-                    Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale", "EPSG:4326");
+            List<String> gridSetNames = Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale", "EPSG:4326");
 
             ParameterFilter styleFilter = mock(ParameterFilter.class);
             when(styleFilter.getKey()).thenReturn("STYLES");
             when(styleFilter.getDefaultValue()).thenReturn("Foo");
             when(styleFilter.getLegalValues()).thenReturn(null);
 
-            TileLayer tileLayer =
-                    mockTileLayer(
-                            "mockLayer", gridSetNames, Collections.singletonList(styleFilter));
+            TileLayer tileLayer = mockTileLayer("mockLayer", gridSetNames, Collections.singletonList(styleFilter));
             when(tld.getLayerList()).thenReturn(Arrays.asList(tileLayer));
             when(tld.getLayerListFiltered()).thenReturn(Arrays.asList(tileLayer));
         }
@@ -887,18 +772,11 @@ public class WMTSServiceTest {
         assertNull(layerName);
 
         assertEquals(Conveyor.RequestHandler.SERVICE, conv.reqHandler);
-        WMTSGetCapabilities wmsCap =
-                new WMTSGetCapabilities(
-                        tld,
-                        gridsetBroker,
-                        conv.servletReq,
-                        "http://localhost:8080",
-                        "/geowebcache",
-                        new NullURLMangler());
+        WMTSGetCapabilities wmsCap = new WMTSGetCapabilities(
+                tld, gridsetBroker, conv.servletReq, "http://localhost:8080", "/geowebcache", new NullURLMangler());
         wmsCap.writeResponse(conv.servletResp, mock(RuntimeStats.class));
         assertTrue(resp.containsHeader("content-disposition"));
-        assertEquals(
-                "inline;filename=wmts-getcapabilities.xml", resp.getHeader("content-disposition"));
+        assertEquals("inline;filename=wmts-getcapabilities.xml", resp.getHeader("content-disposition"));
 
         // System.out.println(resp.getContentAsString());
 
@@ -909,36 +787,20 @@ public class WMTSServiceTest {
         // validator.assertIsValid();
 
         Document doc = XMLUnit.buildTestDocument(result);
-        Map<String, String> namespaces = new HashMap<>();
-        namespaces.put("xlink", "http://www.w3.org/1999/xlink");
-        namespaces.put("xsi", "http://www.w3.org/2001/XMLSchema-instance");
-        namespaces.put("ows", "http://www.opengis.net/ows/1.1");
-        namespaces.put("wmts", "http://www.opengis.net/wmts/1.0");
-        XMLUnit.setXpathNamespaceContext(new SimpleNamespaceContext(namespaces));
-        XpathEngine xpath = XMLUnit.newXpathEngine();
+        XpathEngine xpath = buildWMTSXPath();
 
         assertEquals("1", xpath.evaluate("count(//wmts:Contents/wmts:Layer)", doc));
-        assertEquals(
-                "1",
-                xpath.evaluate(
-                        "count(//wmts:Contents/wmts:Layer[ows:Identifier='mockLayer'])", doc));
-        assertEquals(
-                "1",
-                xpath.evaluate("count(//wmts:Contents/wmts:Layer/wmts:Style/ows:Identifier)", doc));
-        assertEquals(
-                "", xpath.evaluate("//wmts:Contents/wmts:Layer/wmts:Style/ows:Identifier", doc));
+        assertEquals("1", xpath.evaluate("count(//wmts:Contents/wmts:Layer[ows:Identifier='mockLayer'])", doc));
+        assertEquals("1", xpath.evaluate("count(//wmts:Contents/wmts:Layer/wmts:Style/ows:Identifier)", doc));
+        assertEquals("", xpath.evaluate("//wmts:Contents/wmts:Layer/wmts:Style/ows:Identifier", doc));
     }
 
     @Test
     public void testGetCapEmptyStyleFilter() throws Exception {
 
-        GeoWebCacheDispatcher gwcd = mock(GeoWebCacheDispatcher.class);
-        when(gwcd.getServletPrefix()).thenReturn(null);
-
         service = new WMTSService(sb, tld, null, mock(RuntimeStats.class));
 
-        @SuppressWarnings("unchecked")
-        Map<String, String[]> kvp = new CaseInsensitiveMap();
+        Map<String, String[]> kvp = new CaseInsensitiveMap<>();
         kvp.put("service", new String[] {"WMTS"});
         kvp.put("version", new String[] {"1.0.0"});
         kvp.put("request", new String[] {"GetCapabilities"});
@@ -949,17 +811,14 @@ public class WMTSServiceTest {
         when(req.getParameterMap()).thenReturn(kvp);
 
         {
-            List<String> gridSetNames =
-                    Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale", "EPSG:4326");
+            List<String> gridSetNames = Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale", "EPSG:4326");
 
             ParameterFilter styleFilter = mock(ParameterFilter.class);
             when(styleFilter.getKey()).thenReturn("STYLES");
             when(styleFilter.getDefaultValue()).thenReturn("Foo");
             when(styleFilter.getLegalValues()).thenReturn(Collections.emptyList());
 
-            TileLayer tileLayer =
-                    mockTileLayer(
-                            "mockLayer", gridSetNames, Collections.singletonList(styleFilter));
+            TileLayer tileLayer = mockTileLayer("mockLayer", gridSetNames, Collections.singletonList(styleFilter));
             when(tld.getLayerList()).thenReturn(Arrays.asList(tileLayer));
             when(tld.getLayerListFiltered()).thenReturn(Arrays.asList(tileLayer));
         }
@@ -971,18 +830,11 @@ public class WMTSServiceTest {
         assertNull(layerName);
 
         assertEquals(Conveyor.RequestHandler.SERVICE, conv.reqHandler);
-        WMTSGetCapabilities wmsCap =
-                new WMTSGetCapabilities(
-                        tld,
-                        gridsetBroker,
-                        conv.servletReq,
-                        "http://localhost:8080",
-                        "/geowebcache",
-                        new NullURLMangler());
+        WMTSGetCapabilities wmsCap = new WMTSGetCapabilities(
+                tld, gridsetBroker, conv.servletReq, "http://localhost:8080", "/geowebcache", new NullURLMangler());
         wmsCap.writeResponse(conv.servletResp, mock(RuntimeStats.class));
         assertTrue(resp.containsHeader("content-disposition"));
-        assertEquals(
-                "inline;filename=wmts-getcapabilities.xml", resp.getHeader("content-disposition"));
+        assertEquals("inline;filename=wmts-getcapabilities.xml", resp.getHeader("content-disposition"));
 
         // System.out.println(resp.getContentAsString());
 
@@ -993,36 +845,20 @@ public class WMTSServiceTest {
         validator.assertIsValid();
 
         Document doc = XMLUnit.buildTestDocument(result);
-        Map<String, String> namespaces = new HashMap<>();
-        namespaces.put("xlink", "http://www.w3.org/1999/xlink");
-        namespaces.put("xsi", "http://www.w3.org/2001/XMLSchema-instance");
-        namespaces.put("ows", "http://www.opengis.net/ows/1.1");
-        namespaces.put("wmts", "http://www.opengis.net/wmts/1.0");
-        XMLUnit.setXpathNamespaceContext(new SimpleNamespaceContext(namespaces));
-        XpathEngine xpath = XMLUnit.newXpathEngine();
+        XpathEngine xpath = buildWMTSXPath();
 
         assertEquals("1", xpath.evaluate("count(//wmts:Contents/wmts:Layer)", doc));
-        assertEquals(
-                "1",
-                xpath.evaluate(
-                        "count(//wmts:Contents/wmts:Layer[ows:Identifier='mockLayer'])", doc));
-        assertEquals(
-                "1",
-                xpath.evaluate("count(//wmts:Contents/wmts:Layer/wmts:Style/ows:Identifier)", doc));
-        assertEquals(
-                "", xpath.evaluate("//wmts:Contents/wmts:Layer/wmts:Style/ows:Identifier", doc));
+        assertEquals("1", xpath.evaluate("count(//wmts:Contents/wmts:Layer[ows:Identifier='mockLayer'])", doc));
+        assertEquals("1", xpath.evaluate("count(//wmts:Contents/wmts:Layer/wmts:Style/ows:Identifier)", doc));
+        assertEquals("", xpath.evaluate("//wmts:Contents/wmts:Layer/wmts:Style/ows:Identifier", doc));
     }
 
     @Test
     public void testGetCapMultipleStyles() throws Exception {
 
-        GeoWebCacheDispatcher gwcd = mock(GeoWebCacheDispatcher.class);
-        when(gwcd.getServletPrefix()).thenReturn(null);
-
         service = new WMTSService(sb, tld, null, mock(RuntimeStats.class));
 
-        @SuppressWarnings("unchecked")
-        Map<String, String[]> kvp = new CaseInsensitiveMap();
+        Map<String, String[]> kvp = new CaseInsensitiveMap<>();
         kvp.put("service", new String[] {"WMTS"});
         kvp.put("version", new String[] {"1.0.0"});
         kvp.put("request", new String[] {"GetCapabilities"});
@@ -1033,17 +869,14 @@ public class WMTSServiceTest {
         when(req.getParameterMap()).thenReturn(kvp);
 
         {
-            List<String> gridSetNames =
-                    Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale", "EPSG:4326");
+            List<String> gridSetNames = Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale", "EPSG:4326");
 
             ParameterFilter styleFilter = mock(ParameterFilter.class);
             when(styleFilter.getKey()).thenReturn("STYLES");
             when(styleFilter.getDefaultValue()).thenReturn("Foo");
             when(styleFilter.getLegalValues()).thenReturn(Arrays.asList("Foo", "Bar", "Baz"));
 
-            TileLayer tileLayer =
-                    mockTileLayer(
-                            "mockLayer", gridSetNames, Collections.singletonList(styleFilter));
+            TileLayer tileLayer = mockTileLayer("mockLayer", gridSetNames, Collections.singletonList(styleFilter));
             when(tld.getLayerList()).thenReturn(Arrays.asList(tileLayer));
             when(tld.getLayerListFiltered()).thenReturn(Arrays.asList(tileLayer));
         }
@@ -1055,18 +888,11 @@ public class WMTSServiceTest {
         assertNull(layerName);
 
         assertEquals(Conveyor.RequestHandler.SERVICE, conv.reqHandler);
-        WMTSGetCapabilities wmsCap =
-                new WMTSGetCapabilities(
-                        tld,
-                        gridsetBroker,
-                        conv.servletReq,
-                        "http://localhost:8080",
-                        "/geowebcache",
-                        new NullURLMangler());
+        WMTSGetCapabilities wmsCap = new WMTSGetCapabilities(
+                tld, gridsetBroker, conv.servletReq, "http://localhost:8080", "/geowebcache", new NullURLMangler());
         wmsCap.writeResponse(conv.servletResp, mock(RuntimeStats.class));
         assertTrue(resp.containsHeader("content-disposition"));
-        assertEquals(
-                "inline;filename=wmts-getcapabilities.xml", resp.getHeader("content-disposition"));
+        assertEquals("inline;filename=wmts-getcapabilities.xml", resp.getHeader("content-disposition"));
 
         // System.out.println(resp.getContentAsString());
 
@@ -1077,19 +903,10 @@ public class WMTSServiceTest {
         // validator.assertIsValid();
 
         Document doc = XMLUnit.buildTestDocument(result);
-        Map<String, String> namespaces = new HashMap<>();
-        namespaces.put("xlink", "http://www.w3.org/1999/xlink");
-        namespaces.put("xsi", "http://www.w3.org/2001/XMLSchema-instance");
-        namespaces.put("ows", "http://www.opengis.net/ows/1.1");
-        namespaces.put("wmts", "http://www.opengis.net/wmts/1.0");
-        XMLUnit.setXpathNamespaceContext(new SimpleNamespaceContext(namespaces));
-        XpathEngine xpath = XMLUnit.newXpathEngine();
+        XpathEngine xpath = buildWMTSXPath();
 
         assertEquals("1", xpath.evaluate("count(//wmts:Contents/wmts:Layer)", doc));
-        assertEquals(
-                "1",
-                xpath.evaluate(
-                        "count(//wmts:Contents/wmts:Layer[ows:Identifier='mockLayer'])", doc));
+        assertEquals("1", xpath.evaluate("count(//wmts:Contents/wmts:Layer[ows:Identifier='mockLayer'])", doc));
         // There should be three styles
         assertEquals(
                 "3",
@@ -1121,21 +938,28 @@ public class WMTSServiceTest {
                         doc));
     }
 
+    private static XpathEngine buildWMTSXPath() {
+        Map<String, String> namespaces = new HashMap<>();
+        namespaces.put("xlink", "http://www.w3.org/1999/xlink");
+        namespaces.put("xsi", "http://www.w3.org/2001/XMLSchema-instance");
+        namespaces.put("ows", "http://www.opengis.net/ows/1.1");
+        namespaces.put("wmts", "http://www.opengis.net/wmts/1.0");
+        XMLUnit.setXpathNamespaceContext(new SimpleNamespaceContext(namespaces));
+        XpathEngine xpath = XMLUnit.newXpathEngine();
+        return xpath;
+    }
+
     /**
-     * Generates a layer with "elevation" and "time" dimensions and mime types "image/png" ,
-     * "image/jpeg" , "text/plain" , "text/html" , "application/vnd.ogc.gml" then checks if in the
-     * capabilities documents each <ResourceURL> elements contains both the dimensions components.
+     * Generates a layer with "elevation" and "time" dimensions and mime types "image/png" , "image/jpeg" , "text/plain"
+     * , "text/html" , "application/vnd.ogc.gml" then checks if in the capabilities documents each <ResourceURL>
+     * elements contains both the dimensions components.
      */
-    @SuppressWarnings("unchecked")
     @Test
     public void testGetCapWithMultipleDimensions() throws Exception {
 
-        GeoWebCacheDispatcher gwcd = mock(GeoWebCacheDispatcher.class);
-        when(gwcd.getServletPrefix()).thenReturn(null);
-
         service = new WMTSService(sb, tld, null, mock(RuntimeStats.class));
 
-        Map<String, String[]> kvp = new CaseInsensitiveMap();
+        Map<String, String[]> kvp = new CaseInsensitiveMap<>();
         kvp.put("service", new String[] {"WMTS"});
         kvp.put("version", new String[] {"1.0.0"});
         kvp.put("request", new String[] {"GetCapabilities"});
@@ -1146,8 +970,7 @@ public class WMTSServiceTest {
         when(req.getParameterMap()).thenReturn(kvp);
 
         {
-            List<String> gridSetNames =
-                    Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale", "EPSG:4326");
+            List<String> gridSetNames = Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale", "EPSG:4326");
 
             ParameterFilter styleFilter = mock(ParameterFilter.class);
             when(styleFilter.getKey()).thenReturn("STYLES");
@@ -1157,19 +980,15 @@ public class WMTSServiceTest {
             ParameterFilter elevationDimension = mock(ParameterFilter.class);
             when(elevationDimension.getKey()).thenReturn("elevation");
             when(elevationDimension.getDefaultValue()).thenReturn("0");
-            when(elevationDimension.getLegalValues())
-                    .thenReturn(Arrays.asList("0", "200", "400", "600"));
+            when(elevationDimension.getLegalValues()).thenReturn(Arrays.asList("0", "200", "400", "600"));
 
             ParameterFilter timeDimension = mock(ParameterFilter.class);
             when(timeDimension.getKey()).thenReturn("time");
             when(timeDimension.getDefaultValue()).thenReturn("2016-02-23T03:00:00.00");
             when(timeDimension.getLegalValues()).thenReturn(Collections.emptyList());
 
-            TileLayer tileLayer =
-                    mockTileLayer(
-                            "mockLayer",
-                            gridSetNames,
-                            Arrays.asList(styleFilter, elevationDimension, timeDimension));
+            TileLayer tileLayer = mockTileLayer(
+                    "mockLayer", gridSetNames, Arrays.asList(styleFilter, elevationDimension, timeDimension));
             when(tld.getLayerList()).thenReturn(Arrays.asList(tileLayer));
             when(tld.getLayerListFiltered()).thenReturn(Arrays.asList(tileLayer));
         }
@@ -1181,35 +1000,19 @@ public class WMTSServiceTest {
         assertNull(layerName);
 
         assertEquals(Conveyor.RequestHandler.SERVICE, conv.reqHandler);
-        WMTSGetCapabilities wmsCap =
-                new WMTSGetCapabilities(
-                        tld,
-                        gridsetBroker,
-                        conv.servletReq,
-                        "http://localhost:8080",
-                        "/geowebcache",
-                        new NullURLMangler());
+        WMTSGetCapabilities wmsCap = new WMTSGetCapabilities(
+                tld, gridsetBroker, conv.servletReq, "http://localhost:8080", "/geowebcache", new NullURLMangler());
         wmsCap.writeResponse(conv.servletResp, mock(RuntimeStats.class));
         assertTrue(resp.containsHeader("content-disposition"));
-        assertEquals(
-                "inline;filename=wmts-getcapabilities.xml", resp.getHeader("content-disposition"));
+        assertEquals("inline;filename=wmts-getcapabilities.xml", resp.getHeader("content-disposition"));
 
         String result = resp.getContentAsString();
 
         Document doc = XMLUnit.buildTestDocument(result);
-        Map<String, String> namespaces = new HashMap<>();
-        namespaces.put("xlink", "http://www.w3.org/1999/xlink");
-        namespaces.put("xsi", "http://www.w3.org/2001/XMLSchema-instance");
-        namespaces.put("ows", "http://www.opengis.net/ows/1.1");
-        namespaces.put("wmts", "http://www.opengis.net/wmts/1.0");
-        XMLUnit.setXpathNamespaceContext(new SimpleNamespaceContext(namespaces));
-        XpathEngine xpath = XMLUnit.newXpathEngine();
+        XpathEngine xpath = buildWMTSXPath();
 
         assertEquals("1", xpath.evaluate("count(//wmts:Contents/wmts:Layer)", doc));
-        assertEquals(
-                "1",
-                xpath.evaluate(
-                        "count(//wmts:Contents/wmts:Layer[ows:Identifier='mockLayer'])", doc));
+        assertEquals("1", xpath.evaluate("count(//wmts:Contents/wmts:Layer[ows:Identifier='mockLayer'])", doc));
 
         assertEquals(
                 "5",
@@ -1218,22 +1021,15 @@ public class WMTSServiceTest {
                                 + "[contains(@template,'&elevation={elevation}&time={time}')])",
                         doc));
 
-        assertEquals(
-                "2",
-                xpath.evaluate(
-                        "count(//wmts:Contents/wmts:Layer/wmts:Dimension/ows:Identifier)", doc));
+        assertEquals("2", xpath.evaluate("count(//wmts:Contents/wmts:Layer/wmts:Dimension/ows:Identifier)", doc));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void testGetTileWithStyle() throws Exception {
 
-        GeoWebCacheDispatcher gwcd = mock(GeoWebCacheDispatcher.class);
-        when(gwcd.getServletPrefix()).thenReturn(null);
-
         service = new WMTSService(sb, tld, null, mock(RuntimeStats.class));
 
-        Map<String, String[]> kvp = new CaseInsensitiveMap();
+        Map<String, String[]> kvp = new CaseInsensitiveMap<>();
         kvp.put("service", new String[] {"WMTS"});
         kvp.put("version", new String[] {"1.0.0"});
         kvp.put("request", new String[] {"GetTile"});
@@ -1251,17 +1047,14 @@ public class WMTSServiceTest {
         when(req.getParameterMap()).thenReturn(kvp);
 
         {
-            List<String> gridSetNames =
-                    Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale", "EPSG:4326");
+            List<String> gridSetNames = Arrays.asList("GlobalCRS84Pixel", "GlobalCRS84Scale", "EPSG:4326");
 
             ParameterFilter styleFilter = mock(ParameterFilter.class);
             when(styleFilter.getKey()).thenReturn("STYLES");
             when(styleFilter.getDefaultValue()).thenReturn("Foo");
             when(styleFilter.getLegalValues()).thenReturn(Arrays.asList("Foo", "Bar", "Baz"));
 
-            TileLayer tileLayer =
-                    mockTileLayer(
-                            "mockLayer", gridSetNames, Collections.singletonList(styleFilter));
+            TileLayer tileLayer = mockTileLayer("mockLayer", gridSetNames, Collections.singletonList(styleFilter));
 
             // Style parameter should have been made plural by the time
             // getModifiableParameters is
@@ -1269,13 +1062,9 @@ public class WMTSServiceTest {
             Map<String, String> map = new HashMap<>();
             map.put("STYLES", "Bar");
             when(tileLayer.getModifiableParameters(
-                            argThat(
-                                    m ->
-                                            hasEntry(
-                                                            equalToIgnoringCase("styles"),
-                                                            arrayContaining(
-                                                                    equalToIgnoringCase("Bar")))
-                                                    .matches(m)),
+                            argThat(m -> hasEntry(
+                                            equalToIgnoringCase("styles"), arrayContaining(equalToIgnoringCase("Bar")))
+                                    .matches(m)),
                             any()))
                     .thenReturn(Collections.unmodifiableMap(map));
             when(tld.getLayerList()).thenReturn(Arrays.asList(tileLayer));
@@ -1299,11 +1088,8 @@ public class WMTSServiceTest {
     @Test
     public void testDispatchCustomOperations() throws Exception {
         // instantiating all the necessary machinery to perform the request
-        GeoWebCacheDispatcher gwcd = mock(GeoWebCacheDispatcher.class);
-        when(gwcd.getServletPrefix()).thenReturn(null);
         service = new WMTSService(sb, tld, null, mock(RuntimeStats.class));
-        @SuppressWarnings("unchecked")
-        Map<String, String[]> kvp = new CaseInsensitiveMap();
+        Map<String, String[]> kvp = new CaseInsensitiveMap<>();
         kvp.put("service", new String[] {"WMTS"});
         kvp.put("version", new String[] {"1.0.0"});
         kvp.put("request", new String[] {"CustomOperation"});
@@ -1312,38 +1098,34 @@ public class WMTSServiceTest {
         when(req.getCharacterEncoding()).thenReturn("UTF-8");
         when(req.getParameterMap()).thenReturn(kvp);
         // setup a wmts extension
-        service.addExtension(
-                new WMTSExtensionImpl() {
+        service.addExtension(new WMTSExtensionImpl() {
 
-                    @Override
-                    public Conveyor getConveyor(
-                            HttpServletRequest request,
-                            HttpServletResponse response,
-                            StorageBroker storageBroker)
-                            throws GeoWebCacheException, OWSException {
-                        if ((request.getParameterMap().get("request")[0])
-                                .equalsIgnoreCase("CustomOperation")) {
-                            Conveyor conveyor = new ConveyorTile(sb, null, req, resp);
-                            conveyor.setHint("CustomOperation");
-                            return conveyor;
-                        }
-                        return null;
-                    }
+            @Override
+            public Conveyor getConveyor(
+                    HttpServletRequest request, HttpServletResponse response, StorageBroker storageBroker)
+                    throws GeoWebCacheException, OWSException {
+                if ((request.getParameterMap().get("request")[0]).equalsIgnoreCase("CustomOperation")) {
+                    Conveyor conveyor = new ConveyorTile(sb, null, req, resp);
+                    conveyor.setHint("CustomOperation");
+                    return conveyor;
+                }
+                return null;
+            }
 
-                    @Override
-                    public boolean handleRequest(Conveyor conveyor) throws OWSException {
-                        if (conveyor.getHint().equalsIgnoreCase("CustomOperation")) {
-                            try (OutputStream os = conveyor.servletResp.getOutputStream()) {
-                                os.write("CustomOperation Result".getBytes());
-                                os.flush();
-                            } catch (IOException exception) {
-                                throw new RuntimeException(exception);
-                            }
-                            return true;
-                        }
-                        return false;
+            @Override
+            public boolean handleRequest(Conveyor conveyor) throws OWSException {
+                if (conveyor.getHint().equalsIgnoreCase("CustomOperation")) {
+                    try (OutputStream os = conveyor.servletResp.getOutputStream()) {
+                        os.write("CustomOperation Result".getBytes());
+                        os.flush();
+                    } catch (IOException exception) {
+                        throw new RuntimeException(exception);
                     }
-                });
+                    return true;
+                }
+                return false;
+            }
+        });
         // invoke the custom operation
         Conveyor conveyor = service.getConveyor(req, resp);
         assertThat(conveyor, notNullValue());
@@ -1352,7 +1134,51 @@ public class WMTSServiceTest {
     }
 
     @Test
-    public void testGetFeature() throws Exception {
+    public void testGetFeatureInfo() throws Exception {
+        Conveyor conveyor =
+                runGetFeatureInfo("50", "50", "TEST FEATURE INFO", "image/png", XMLMime.gml.getMimeType(), false);
+
+        service.handleRequest(conveyor);
+        // fail("Expected SecurityException");
+
+        MockHttpServletResponse resp = (MockHttpServletResponse) conveyor.servletResp;
+        assertThat(resp.getContentAsString(), equalTo("TEST FEATURE INFO"));
+    }
+
+    @Test
+    public void testFeatureInfoInvalidColumn() throws Exception {
+        // one off, 255 is the actual max
+        checkFeatureInfoInvalidIJ("256", "50", "I");
+    }
+
+    @Test
+    public void testFeatureInfoInvalidRow() throws Exception {
+        // one off, 255 is the actual max
+        checkFeatureInfoInvalidIJ("50", "256", "J");
+    }
+
+    private void checkFeatureInfoInvalidIJ(String i, String j, String locator)
+            throws GeoWebCacheException, OWSException {
+        Conveyor conv = runGetFeatureInfo(i, j, "TEST RESPONSE", "image/png", XMLMime.gml.getMimeType(), false);
+
+        OWSException exception = assertThrows(OWSException.class, () -> service.handleRequest(conv));
+        assertEquals(locator, exception.getLocator());
+        assertEquals("PointIJOutOfRange", exception.getExceptionCode());
+    }
+
+    @Test
+    public void testFeatureInfoMissingFormat() throws Exception {
+        OWSException exception = assertThrows(
+                OWSException.class,
+                () -> runGetFeatureInfo("20", "50", "TEST RESPONSE", null, XMLMime.gml.getMimeType(), true));
+
+        assertEquals("FORMAT", exception.getLocator());
+        assertEquals("MissingParameterValue", exception.getExceptionCode());
+    }
+
+    private Conveyor runGetFeatureInfo(
+            String i, String j, String response, String tileFormat, String infoFormat, boolean citeCompliant)
+            throws GeoWebCacheException, OWSException {
         SecurityDispatcher secDisp = mock(SecurityDispatcher.class);
         when(secDisp.isSecurityEnabled()).thenReturn(false);
 
@@ -1361,8 +1187,12 @@ public class WMTSServiceTest {
 
         GridSetBroker gsb = mock(GridSetBroker.class);
 
-        service =
-                new WMTSService(sb, tld, gsb, mock(RuntimeStats.class), new NullURLMangler(), gwcd);
+        service = new WMTSService(sb, tld, gsb, mock(RuntimeStats.class), new NullURLMangler(), gwcd) {
+            @Override
+            protected boolean isCiteCompliant() {
+                return citeCompliant;
+            }
+        };
         service.setSecurityDispatcher(secDisp);
 
         GridSubset subset = mock(GridSubset.class);
@@ -1391,21 +1221,21 @@ public class WMTSServiceTest {
         req.addParameter("version", "1.0.0");
         req.addParameter("request", "GetFeatureInfo");
         req.addParameter("layer", layerName);
-        req.addParameter("format", "image/png");
+        if (tileFormat != null) req.addParameter("format", tileFormat);
         req.addParameter("tilematrixset", "testGridset");
         req.addParameter("tilematrix", "testGridset:2");
         req.addParameter("tilerow", "3");
         req.addParameter("tilecol", "4");
-        req.addParameter("infoformat", XMLMime.gml.getMimeType());
-        req.addParameter("i", "20");
-        req.addParameter("j", "50");
-        req.setRequestURI(
-                "/geowebcache/service/wmts?service=WMTS&version=1.0.0&request=GetFeatureInfo"
-                        + "&layer="
-                        + layerName
-                        + "&format=image/png&tilematrixset=testGridset"
-                        + "&tilematrix=testGridset:2&tilerow=3&tilecol=4&infoformat="
-                        + XMLMime.gml.getMimeType());
+        if (infoFormat != null) req.addParameter("infoformat", infoFormat);
+        req.addParameter("i", i);
+        req.addParameter("j", j);
+        req.setRequestURI("/geowebcache/service/wmts?service=WMTS&version=1.0.0&request=GetFeatureInfo"
+                + "&layer="
+                + layerName
+                + "&format=image/png&tilematrixset=testGridset"
+                + "&tilematrix=testGridset:2&tilerow=3&tilecol=4&infoformat="
+                + infoFormat);
+        req.setPathInfo("service/wmts");
 
         when(subset.getNumTilesHigh(2)).thenReturn(7L);
         when(subset.getGridIndex("testGridset:2")).thenReturn(2L);
@@ -1422,19 +1252,15 @@ public class WMTSServiceTest {
                         Mockito.anyInt(),
                         Mockito.anyInt(),
                         Mockito.anyInt()))
-                .thenReturn(new ByteArrayResource("TEST FEATURE INFO".getBytes()));
+                .thenReturn(new ByteArrayResource(response.getBytes()));
 
         assertThat(conv, hasProperty("hint", equalTo("GetFeatureInfo".toLowerCase())));
         assertThat(conv, hasProperty("requestHandler", equalTo(RequestHandler.SERVICE)));
-
-        service.handleRequest(conv);
-        // fail("Expected SecurityException");
-
-        assertThat(resp.getContentAsString(), equalTo("TEST FEATURE INFO"));
+        return conv;
     }
 
     @Test
-    public void testGetFeatureSecure() throws Exception {
+    public void testGetFeatureInfoSecure() throws Exception {
         SecurityDispatcher secDisp = mock(SecurityDispatcher.class);
         when(secDisp.isSecurityEnabled()).thenReturn(true);
 
@@ -1443,8 +1269,7 @@ public class WMTSServiceTest {
 
         GridSetBroker gsb = mock(GridSetBroker.class);
 
-        service =
-                new WMTSService(sb, tld, gsb, mock(RuntimeStats.class), new NullURLMangler(), gwcd);
+        service = new WMTSService(sb, tld, gsb, mock(RuntimeStats.class), new NullURLMangler(), gwcd);
         service.setSecurityDispatcher(secDisp);
 
         GridSubset subset = mock(GridSubset.class);
@@ -1480,13 +1305,12 @@ public class WMTSServiceTest {
         req.addParameter("infoformat", XMLMime.gml.getMimeType());
         req.addParameter("i", "20");
         req.addParameter("j", "50");
-        req.setRequestURI(
-                "/geowebcache/service/wmts?service=WMTS&version=1.0.0&request=GetFeatureInfo"
-                        + "&layer="
-                        + layerName
-                        + "&format=image/png&tilematrixset=testGridset"
-                        + "&tilematrix=testGridset:2&tilerow=3&tilecol=4&infoformat="
-                        + XMLMime.gml.getMimeType());
+        req.setRequestURI("/geowebcache/service/wmts?service=WMTS&version=1.0.0&request=GetFeatureInfo"
+                + "&layer="
+                + layerName
+                + "&format=image/png&tilematrixset=testGridset"
+                + "&tilematrix=testGridset:2&tilerow=3&tilecol=4&infoformat="
+                + XMLMime.gml.getMimeType());
 
         when(subset.getNumTilesHigh(2)).thenReturn(7L);
         when(subset.getGridIndex("testGridset:2")).thenReturn(2L);
@@ -1519,13 +1343,9 @@ public class WMTSServiceTest {
     @Test
     public void testGetCapWithTileJSONDifferentUrls() throws Exception {
 
-        GeoWebCacheDispatcher gwcd = mock(GeoWebCacheDispatcher.class);
-        when(gwcd.getServletPrefix()).thenReturn(null);
-
         service = new WMTSService(sb, tld, null, mock(RuntimeStats.class));
 
-        @SuppressWarnings("unchecked")
-        Map<String, String[]> kvp = new CaseInsensitiveMap();
+        Map<String, String[]> kvp = new CaseInsensitiveMap<>();
         kvp.put("service", new String[] {"WMTS"});
         kvp.put("version", new String[] {"1.0.0"});
         kvp.put("request", new String[] {"GetCapabilities"});
@@ -1547,36 +1367,20 @@ public class WMTSServiceTest {
         assertNull(layerName);
 
         assertEquals(Conveyor.RequestHandler.SERVICE, conv.reqHandler);
-        WMTSGetCapabilities wmsCap =
-                new WMTSGetCapabilities(
-                        tld,
-                        gridsetBroker,
-                        conv.servletReq,
-                        "http://localhost:8080",
-                        "/geowebcache",
-                        new NullURLMangler());
+        WMTSGetCapabilities wmsCap = new WMTSGetCapabilities(
+                tld, gridsetBroker, conv.servletReq, "http://localhost:8080", "/geowebcache", new NullURLMangler());
         wmsCap.writeResponse(conv.servletResp, mock(RuntimeStats.class));
         assertTrue(resp.containsHeader("content-disposition"));
-        assertEquals(
-                "inline;filename=wmts-getcapabilities.xml", resp.getHeader("content-disposition"));
+        assertEquals("inline;filename=wmts-getcapabilities.xml", resp.getHeader("content-disposition"));
         String result = resp.getContentAsString();
 
         assertTrue(result.contains("mockLayer"));
 
         Document doc = XMLUnit.buildTestDocument(result);
-        Map<String, String> namespaces = new HashMap<>();
-        namespaces.put("xlink", "http://www.w3.org/1999/xlink");
-        namespaces.put("xsi", "http://www.w3.org/2001/XMLSchema-instance");
-        namespaces.put("ows", "http://www.opengis.net/ows/1.1");
-        namespaces.put("wmts", "http://www.opengis.net/wmts/1.0");
-        XMLUnit.setXpathNamespaceContext(new SimpleNamespaceContext(namespaces));
-        XpathEngine xpath = XMLUnit.newXpathEngine();
+        XpathEngine xpath = buildWMTSXPath();
 
         assertEquals("1", xpath.evaluate("count(//wmts:Contents/wmts:Layer)", doc));
-        assertEquals(
-                "1",
-                xpath.evaluate(
-                        "count(//wmts:Contents/wmts:Layer[ows:Identifier='mockLayer'])", doc));
+        assertEquals("1", xpath.evaluate("count(//wmts:Contents/wmts:Layer[ows:Identifier='mockLayer'])", doc));
 
         assertEquals(
                 "1",
@@ -1619,11 +1423,9 @@ public class WMTSServiceTest {
                         "\"tiles\":[\"http://localhost/service/wmts/rest/mockLayer/EPSG:900913/EPSG:900913:{z}/{y}/{x}?format=image/png\"]"));
     }
 
-    private String writeTileJsonResponse(
-            ConveyorTile conv, TileLayer tileLayer, MockHttpServletResponse resp)
+    private String writeTileJsonResponse(ConveyorTile conv, TileLayer tileLayer, MockHttpServletResponse resp)
             throws UnsupportedEncodingException {
-        WMTSTileJSON tileJSON =
-                new WMTSTileJSON(conv, "http://localhost", "", null, new NullURLMangler());
+        WMTSTileJSON tileJSON = new WMTSTileJSON(conv, "http://localhost", "", null, new NullURLMangler());
         tileJSON.writeResponse(tileLayer);
         return resp.getContentAsString();
     }

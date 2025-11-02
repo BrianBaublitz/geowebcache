@@ -1,19 +1,19 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Arne Kepp / The Open Planning Project 2009
  */
 package org.geowebcache.storage;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
@@ -21,12 +21,12 @@ import org.geowebcache.grid.GridSet;
 import org.geowebcache.io.Resource;
 
 /**
- * Represents a specific tile in a {@link GridSet}, identified by xyz. Normally the contents can be
- * either an image or a regionated KML tile, the class is format agnostic and carries a {@link
- * Resource} object with the data.
+ * Represents a specific tile in a {@link GridSet}, identified by xyz. Normally the contents can be either an image or a
+ * regionated KML tile, the class is format agnostic and carries a {@link Resource} object with the data.
  */
 public class TileObject extends StorageObject implements Serializable {
     /** serialVersionUID */
+    @Serial
     private static final long serialVersionUID = 2204318806003485110L;
 
     public static final String TYPE = "tile";
@@ -44,11 +44,7 @@ public class TileObject extends StorageObject implements Serializable {
     String gridSetId;
 
     public static TileObject createQueryTileObject(
-            String layerName,
-            long[] xyz,
-            String gridSetId,
-            String format,
-            Map<String, String> parameters) {
+            String layerName, long[] xyz, String gridSetId, String format, Map<String, String> parameters) {
         TileObject obj = new TileObject();
 
         obj.layer_name = layerName;
@@ -111,9 +107,7 @@ public class TileObject extends StorageObject implements Serializable {
         return this.parameters_id;
     }
 
-    /**
-     * The BlobStore is responsible for setting this based on the value of {@link #getParameters()}
-     */
+    /** The BlobStore is responsible for setting this based on the value of {@link #getParameters()} */
     public void setParametersId(String parameters_id) {
         this.parameters_id = parameters_id;
     }

@@ -11,11 +11,13 @@ Storage
 Cache
 -----
 
-Starting with version 1.8.0, there are two types of persistent storage mechanisms for tiles:
+Starting with version 1.8.0, GeoWebCache supports multiple persistent storage mechanisms for tiles:
 
-* File blob store: stores tiles in a directory structure consisting of various image files organized by layer and zoom level.  
-* S3 blob store: stores tiles in an `Amazon Simple Storage Service <http://aws.amazon.com/s3/>`_ bucket, as individual "objects" following a 
+* File blob store: stores tiles in a directory structure consisting of various image files organized by layer and zoom level.
+* S3 blob store: stores tiles in an `Amazon Simple Storage Service <http://aws.amazon.com/s3/>`_ bucket, as individual "objects" following a
   `TMS <http://wiki.osgeo.org/wiki/Tile_Map_Service_Specification>`_-like key structure.
+* Google Cloud Storage blob store: stores tiles in a GCS bucket using the same TMS-like structure as S3.
+* Azure blob store, MBTiles blob store, Swift blob store: additional storage backends described below.
 
 Zero or more blobstores can be configured in the configuration file to store tiles at different locations and on different storage back-ends.
 One of the configured blobstores will be the **default** one. Meaning that it will be used to store the tiles of every layer whose configuration
@@ -23,13 +25,15 @@ does not explicitly indicate which blobstore shall be used.
 
 .. note:: **there will always be a "default" blobstore**. If a blobstore to be used by default is not explicitly configured, one will
    be created automatically following the legacy cache location lookup mechanism used in versions prior to 1.8.0.
- 
+
+.. _configuration.file:
+
 Configuration File
 ------------------
 
-The location of the configuration file, :file:`geowebcache.xml`, will be defined by the ``GEOWEBCACHE_CACHE_DIR`` application argument.
+The location of the configuration file, :file:`geowebcache.xml`, will be defined by the ``GEOWEBCACHE_CACHE_DIR`` application parameter.
 
-There are a few ways to define this argument:
+There are a few ways to define ``GEOWEBCACHE_CACHE_DIR``:
 
 * JVM system environment variable
 * Servlet context parameteter
@@ -37,39 +41,41 @@ There are a few ways to define this argument:
 
 The variable in all cases is defined as ``GEOWEBCACHE_CACHE_DIR``.
 
-To set as a JVM system environment variable, add the parameter ``-DGEOWEBCACHE_CACHE_DIR=<path>`` to your servlet startup script.  
-In Tomcat, this can be added to the Java Options (JAVA_OPTS) variable in the startup script.
+1. To set as a JVM system environment variable, add the parameter ``-DGEOWEBCACHE_CACHE_DIR=<path>`` to your servlet startup script.
 
-To set as a servlet context parameter, edit the GeoWebCache :file:`web.xml` file and add the following code:
+   In Tomcat, this can be added to the Java Options (``JAVA_OPTS``) variable in the startup script, or by creating :file:`setenv.sh` / :file:`setenv.bat`:
 
-.. code-block:: xml
+2. To set as a servlet context parameter, edit the GeoWebCache :file:`web.xml` file and add the following code:
 
-   <context-param>
-     <param-name>GEOWEBCACHE_CACHE_DIR</param-name>
-     <param-value>PATH</param-value>
-   </context-param>
+   .. code-block:: xml
+   
+      <context-param>
+        <param-name>GEOWEBCACHE_CACHE_DIR</param-name>
+        <param-value>PATH</param-value>
+      </context-param>
 
-where ``PATH`` is the location of the cache directory.
+    where ``PATH`` is the location of the cache directory.
 
-To set as an operating system environment variable, run one of the the following commands:
+3. To set as an operating system environment variable, run one of the the following commands:
 
-Windows::
+   Windows::
+   
+     > set GEOWEBCACHE_CACHE_DIR=<path>
+   
+   Linux/OS X::
+   
+     $ export GEOWEBCACHE_CACHE_DIR=<path>
 
-  > set GEOWEBCACHE_CACHE_DIR=<path>
+4. Not recommended: It is possible to set this location directly in the :file:`geowebcache-core-context.xml` file.
+   However this file will be replaced each update:
 
-Linux/OS X::
+   .. code-block:: xml
+   
+      <!-- bean id="gwcBlobStore" class="org.geowebcache.storage.blobstore.file.FileBlobStore" destroy-method="destroy">
+        <constructor-arg value="/tmp/gwc_blobstore" />
+      </bean -->
 
-  $ export GEOWEBCACHE_CACHE_DIR=<path>
-
-Finally, although not recommended, it is possible to set this location directly in the :file:`geowebcache-core-context.xml` file.  Uncomment this code:
-
-.. code-block:: xml
-
-   <!-- bean id="gwcBlobStore" class="org.geowebcache.storage.blobstore.file.FileBlobStore" destroy-method="destroy">
-     <constructor-arg value="/tmp/gwc_blobstore" />
-   </bean -->
-
-making sure to edit the path.  As usual, any changes to the servlet configuration files will require :ref:`configuration.reload`.
+   making sure to edit the path.  As usual, any changes to the servlet configuration files will require :ref:`configuration.reload`.
 
 .. note:: if ``GEOWEBCACHE_CACHE_DIR`` is not provided by any of the above mentioned methods, the directory will default
     to the temporary storage folder specified by the web application container. (For Tomcat, this is the :file:`temp` directory inside the root.)
@@ -283,7 +289,54 @@ GeoServer ``topp:states`` sample layer on a fictitious ``my-geowebcache-bucket``
         zoom: 2
       })
     });
-    
+
+
+Google Cloud Storage (GCS) Blob Store
++++++++++++++++++++++++++++++++++++++
+
+This blob store allows to configure a cache for layers on a Google Cloud Storage bucket with the same TMS-like key structure as S3:
+
+    [prefix]/<layer id>/<gridset id>/<format id>/<parameters hash | "default">/<z>/<x>/<y>.<extension>
+
+Configuration example:
+
+.. code-block:: xml
+
+    <GoogleCloudStorageBlobStore default="false">
+      <id>myGcsCache</id>
+      <enabled>true</enabled>
+      <bucket>my-gwc-bucket</bucket>
+      <prefix>test-cache</prefix>
+      <projectId>my-gcp-project</projectId>
+      <useDefaultCredentialsChain>true</useDefaultCredentialsChain>
+    </GoogleCloudStorageBlobStore>
+
+Properties:
+
+* **bucket**: Mandatory. The name of the GCS bucket where to store tiles.
+* **prefix**: Optional. A prefix path to use as the "root folder" to store tiles at.
+* **projectId**: Optional. The GCP project ID. Can be omitted if using service account credentials that already specify the project.
+* **quotaProjectId**: Optional. Project to bill for quota when using requester-pays buckets.
+* **endpointUrl**: Optional. Custom endpoint URL for use with GCS emulators or compatible services.
+* **useDefaultCredentialsChain**: Optional. Set to ``true`` to use Application Default Credentials. This will look for credentials in the following order: environment variable GOOGLE_APPLICATION_CREDENTIALS pointing to a service account key file, GCE/GKE metadata service, or gcloud CLI credentials.
+* **apiKey**: Optional. API key for authentication. If both apiKey and useDefaultCredentialsChain are provided, apiKey takes precedence.
+
+**Note**: Like S3, all configuration properties support environment variable expansion using the ``${VARIABLE_NAME}`` syntax:
+
+.. code-block:: xml
+
+      <bucket>${GCS_BUCKET}</bucket>
+      <projectId>${GCS_PROJECT_ID}</projectId>
+
+Authentication options:
+
+* **Application Default Credentials** (recommended): Set ``useDefaultCredentialsChain`` to ``true``. This works automatically on GCE/GKE and when GOOGLE_APPLICATION_CREDENTIALS points to a service account key.
+* **API Key**: Set the ``apiKey`` property. Less secure, mainly for testing.
+* **No auth**: For use with emulators only. Leave both auth options unset.
+
+Implementation notes:
+
+Delete operations run asynchronously in a background thread pool. When deleting tile ranges or layers, tiles are removed in batches using the GCS batch API for efficiency. The thread pool is sized based on available processors and shuts down gracefully on blob store destruction.
 
 Microsoft Azure Blob Store
 +++++++++++++++++++++++++++++++++++++++++++++

@@ -1,14 +1,13 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * <p>Copyright 2018
  */
@@ -18,13 +17,13 @@ import static org.easymock.EasyMock.createNiceMock;
 import static org.easymock.EasyMock.expect;
 import static org.geowebcache.util.TestUtils.assertPresent;
 import static org.geowebcache.util.TestUtils.requirePresent;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
 
-import com.google.common.base.Objects;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import org.easymock.EasyMock;
 import org.geotools.data.ows.OperationType;
 import org.geotools.ows.wms.CRSEnvelope;
@@ -55,8 +54,7 @@ public class GetCapabilitiesGridSetConfigurationConformanceTest extends GridSetC
     @Before
     public void setupBroker() {
         if (broker == null) {
-            broker =
-                    new GridSetBroker(Collections.singletonList(new DefaultGridsets(false, false)));
+            broker = new GridSetBroker(Collections.singletonList(new DefaultGridsets(false, false)));
         }
     }
 
@@ -96,15 +94,12 @@ public class GetCapabilitiesGridSetConfigurationConformanceTest extends GridSetC
         expect(cap.getRequest()).andStubReturn(req);
         expect(req.getGetCapabilities()).andStubReturn(gcOpType);
         expect(gcOpType.getGet())
-                .andStubReturn(
-                        URLs.of(
-                                "http://test/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=getcapabilities"));
+                .andStubReturn(URLs.of("http://test/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=getcapabilities"));
         expect(cap.getVersion()).andStubReturn("1.1.1");
         EasyMock.replay(server, cap, req, gcOpType, globalConfig);
 
         GetCapabilitiesConfiguration config =
-                new GetCapabilitiesConfiguration(
-                        broker, "http://test/wms", "image/png", "3x3", "", null, "false") {
+                new GetCapabilitiesConfiguration(broker, "http://test/wms", "image/png", "3x3", "", null, "false") {
 
                     @Override
                     WebMapServer getWMS() {
@@ -125,8 +120,7 @@ public class GetCapabilitiesGridSetConfigurationConformanceTest extends GridSetC
 
     @Test
     public void testLayerGridsets() throws Exception {
-        TileLayer layer =
-                requirePresent(((GetCapabilitiesConfiguration) config).getLayer("testExisting"));
+        TileLayer layer = requirePresent(((GetCapabilitiesConfiguration) config).getLayer("testExisting"));
         GridSet gridset = assertPresent(config.getGridSet("testExisting:EPSG:3978"));
 
         GridSubset gridSubset = layer.getGridSubset("testExisting:EPSG:3978");
@@ -136,27 +130,24 @@ public class GetCapabilitiesGridSetConfigurationConformanceTest extends GridSetC
 
     @Override
     protected Matcher<GridSet> infoEquals(GridSet expected) {
-        return new CustomMatcher<GridSet>(
-                "GridSet matching " + expected.getName() + " with " + expected.getDescription()) {
+        return new CustomMatcher<>("GridSet matching " + expected.getName() + " with " + expected.getDescription()) {
 
             @Override
             public boolean matches(Object item) {
-                return item instanceof GridSet
-                        && ((GridSet) item).getName().equals(expected.getName())
-                        && ((GridSet) item).getDescription().equals(expected.getDescription());
+                return item instanceof GridSet gs
+                        && gs.getName().equals(expected.getName())
+                        && gs.getDescription().equals(expected.getDescription());
             }
         };
     }
 
     @Override
     protected Matcher<GridSet> infoEquals(int expected) {
-        return new CustomMatcher<GridSet>("GridSet with value " + expected) {
+        return new CustomMatcher<>("GridSet with value " + expected) {
 
             @Override
             public boolean matches(Object item) {
-                return item instanceof GridSet
-                        && Objects.equal(
-                                ((GridSet) item).getDescription(), Integer.toString(expected));
+                return item instanceof GridSet gs && Objects.equals(gs.getDescription(), Integer.toString(expected));
             }
         };
     }
@@ -172,8 +163,7 @@ public class GetCapabilitiesGridSetConfigurationConformanceTest extends GridSetC
     }
 
     @Override
-    protected void renameInfo(GridSetConfiguration config, String name1, String name2)
-            throws Exception {
+    protected void renameInfo(GridSetConfiguration config, String name1, String name2) throws Exception {
         Assume.assumeFalse(true);
     }
 

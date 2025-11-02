@@ -1,14 +1,13 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Andrea Aime, GeoSolutions, Copyright 2019
  */
@@ -60,6 +59,15 @@ public final class TMSKeyBuilder {
         return layer.getId();
     }
 
+    public String layerNameFromId(String layerId) {
+        for (TileLayer tileLayer : layers.getLayerList()) {
+            if (layerId.equals(tileLayer.getId())) {
+                return tileLayer.getName();
+            }
+        }
+        return null;
+    }
+
     public Set<String> layerGridsets(String layerName) {
         TileLayer layer;
         try {
@@ -77,9 +85,7 @@ public final class TMSKeyBuilder {
         } catch (GeoWebCacheException e) {
             throw new RuntimeException(e);
         }
-        return layer.getMimeTypes().stream()
-                .map(MimeType::getFileExtension)
-                .collect(Collectors.toSet());
+        return layer.getMimeTypes().stream().map(MimeType::getFileExtension).collect(Collectors.toSet());
     }
 
     public String forTile(TileObject obj) {
@@ -117,17 +123,7 @@ public final class TMSKeyBuilder {
         // Key format, comprised of
         // {@code <prefix>/<layer name>/<gridset id>/<format id>/<parameters
         // hash>/<z>/<x>/<y>.<extension>}
-        String key =
-                join(
-                        false,
-                        prefix,
-                        layer,
-                        gridset,
-                        shortFormat,
-                        parametersId,
-                        z,
-                        x,
-                        y + "." + extension);
+        String key = join(false, prefix, layer, gridset, shortFormat, parametersId, z, x, y + "." + extension);
         return key;
     }
 
@@ -181,9 +177,7 @@ public final class TMSKeyBuilder {
                 false,
                 prefix,
                 layerId,
-                PARAMETERS_METADATA_OBJECT_PREFIX
-                        + parametersId
-                        + PARAMETERS_METADATA_OBJECT_SUFFIX);
+                PARAMETERS_METADATA_OBJECT_PREFIX + parametersId + PARAMETERS_METADATA_OBJECT_SUFFIX);
     }
 
     public String parametersMetadataPrefix(final String layerName) {
@@ -192,8 +186,7 @@ public final class TMSKeyBuilder {
     }
 
     /**
-     * @return the key prefix up to the coordinates (i.e. {@code
-     *     "<prefix>/<layer>/<gridset>/<format>/<parametersId>"})
+     * @return the key prefix up to the coordinates (i.e. {@code "<prefix>/<layer>/<gridset>/<format>/<parametersId>"})
      */
     public String coordinatesPrefix(TileRange obj, boolean endWithSlash) {
         checkNotNull(obj.getLayerName());
@@ -221,7 +214,7 @@ public final class TMSKeyBuilder {
     }
 
     public String pendingDeletes() {
-        if (!Strings.isNullOrEmpty(prefix)) return String.format("%s/%s", prefix, PENDING_DELETES);
+        if (!Strings.isNullOrEmpty(prefix)) return "%s/%s".formatted(prefix, PENDING_DELETES);
         else return PENDING_DELETES;
     }
 
@@ -237,5 +230,28 @@ public final class TMSKeyBuilder {
             joiner.add("");
         }
         return joiner.toString();
+    }
+
+    private static String parametersFromTileRange(TileRange obj) {
+        String parametersId = obj.getParametersId();
+        if (parametersId == null) {
+            Map<String, String> parameters = obj.getParameters();
+            parametersId = ParametersUtils.getId(parameters);
+            if (parametersId == null) {
+                parametersId = "default";
+            } else {
+                obj.setParametersId(parametersId);
+            }
+        }
+        return parametersId;
+    }
+
+    public String forZoomLevel(TileRange tileRange, int level) {
+        String layerId = layerId(tileRange.getLayerName());
+        String gridsetId = tileRange.getGridSetId();
+        String format = tileRange.getMimeType().getFileExtension();
+        String parametersId = parametersFromTileRange(tileRange);
+
+        return join(true, prefix, layerId, gridsetId, format, parametersId, String.valueOf(level));
     }
 }

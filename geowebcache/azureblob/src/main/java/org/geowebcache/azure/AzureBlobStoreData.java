@@ -1,14 +1,13 @@
 /**
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU Lesser General Public License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  *
- * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * <p>You should have received a copy of the GNU Lesser General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
+ * <p>You should have received a copy of the GNU Lesser General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  * @author Fernando Mino, GeoSolutions, Copyright 2019
  */
@@ -18,34 +17,28 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 import org.geowebcache.GeoWebCacheEnvironment;
 
-/**
- * Azure Blobstore type-resolved data from a {@link AzureBlobStoreInfo} using enviroment variables
- * if enabled.
- */
-class AzureBlobStoreData {
+/** Azure Blobstore type-resolved data from a {@link AzureBlobStoreInfo} using enviroment variables if enabled. */
+public class AzureBlobStoreData {
 
     private String container;
     private String prefix;
     private String accountName;
     private String accountKey;
     private Integer maxConnections;
-    private Boolean useHTTPS;
+    private boolean useHTTPS;
     private String proxyHost;
     private Integer proxyPort;
     private String proxyUsername;
     private String proxyPassword;
     private String serviceURL;
 
-    AzureBlobStoreData() {}
+    public AzureBlobStoreData() {}
 
-    public AzureBlobStoreData(
-            final AzureBlobStoreInfo storeInfo, final GeoWebCacheEnvironment environment) {
+    public AzureBlobStoreData(final AzureBlobStoreInfo storeInfo, final GeoWebCacheEnvironment environment) {
         environment
                 .resolveValueIfEnabled(storeInfo.getContainer(), String.class)
                 .ifPresent(x -> this.container = x);
-        environment
-                .resolveValueIfEnabled(storeInfo.getPrefix(), String.class)
-                .ifPresent(x -> this.prefix = x);
+        environment.resolveValueIfEnabled(storeInfo.getPrefix(), String.class).ifPresent(x -> this.prefix = x);
         environment
                 .resolveValueIfEnabled(storeInfo.getAccountName(), String.class)
                 .ifPresent(x -> this.accountName = x);
@@ -113,11 +106,11 @@ class AzureBlobStoreData {
         this.maxConnections = maxConnections;
     }
 
-    public Boolean isUseHTTPS() {
+    public boolean isUseHTTPS() {
         return useHTTPS;
     }
 
-    public void setUseHTTPS(Boolean useHTTPS) {
+    public void setUseHTTPS(boolean useHTTPS) {
         this.useHTTPS = useHTTPS;
     }
 
@@ -137,6 +130,7 @@ class AzureBlobStoreData {
         this.proxyPort = proxyPort;
     }
 
+    /** unused */
     public String getProxyUsername() {
         return proxyUsername;
     }
@@ -145,6 +139,7 @@ class AzureBlobStoreData {
         this.proxyUsername = proxyUsername;
     }
 
+    /** unused */
     public String getProxyPassword() {
         return proxyPassword;
     }
@@ -165,17 +160,15 @@ class AzureBlobStoreData {
         String container = this.getContainer();
         String prefix = this.getPrefix();
         if (prefix == null) {
-            return String.format("container: %s", container);
+            return "container: %s".formatted(container);
         } else {
-            return String.format("container: %s prefix: %s", container, prefix);
+            return "container: %s prefix: %s".formatted(container, prefix);
         }
     }
 
     Proxy getProxy() {
         if (proxyHost != null) {
-            return new Proxy(
-                    Proxy.Type.HTTP,
-                    new InetSocketAddress(proxyHost, proxyPort != null ? proxyPort : 8888));
+            return new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort != null ? proxyPort : 8888));
         }
         return null;
     }
